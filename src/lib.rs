@@ -104,6 +104,7 @@
 //!
 //! The `Scalar` codec does not use unsafe.
 
+#![cfg_attr(any(feature = "x86_ssse3", feature = "x86_sse41"), feature(portable_simd))]
 extern crate byteorder;
 
 mod tables;

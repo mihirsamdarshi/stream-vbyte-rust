@@ -109,7 +109,7 @@ where
 #[inline]
 pub fn decode_num_scalar(len: usize, input: &[u8]) -> u32 {
     let mut buf = [0_u8; 4];
-    &buf[0..len].copy_from_slice(&input[0..len]);
+    buf[0..len].copy_from_slice(&input[0..len]);
 
     LittleEndian::read_u32(&buf)
 }

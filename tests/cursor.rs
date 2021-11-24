@@ -1,9 +1,10 @@
+#![cfg_attr(any(feature = "x86_ssse3", feature = "x86_sse41"), feature(portable_simd))]
+
 extern crate rand;
 extern crate stream_vbyte;
 
 #[cfg(feature = "x86_ssse3")]
-extern crate stdsimd;
-
+use std::{simd, arch::x86_64::__m128i};
 use std::cmp;
 
 use self::rand::Rng;
@@ -399,10 +400,10 @@ where
         // Also, we can't roll cursors back (yet) so we have to do each decode-skip-decode triple
         // in one shot rather than re-trying various skips after the first decode.
 
-        'dec1: for initial_decode_len in 0..(count + 1) {
+        for initial_decode_len in 0..(count + 1) {
             // skips must be divisible by 4
             'skip: for skip_len in (0..count / 4).map(|i| i * QUAD_LEN) {
-                'dec2: for final_decode_len in 0..count {
+                for final_decode_len in 0..count {
                     decoded.clear();
 
                     let garbage = rng.gen();
@@ -743,13 +744,13 @@ impl DecodeQuadSink<()> for TupleSink {
 }
 
 #[cfg(feature = "x86_ssse3")]
-impl DecodeQuadSink<stdsimd::simd::u8x16> for TupleSink {
-    fn on_quad(&mut self, quad: stdsimd::simd::u8x16, nums_decoded: usize) {
-        let u32s = stdsimd::simd::u32x4::from(quad);
-        self.tuples.push((nums_decoded, u32s.extract(0)));
-        self.tuples.push((nums_decoded + 1, u32s.extract(1)));
-        self.tuples.push((nums_decoded + 2, u32s.extract(2)));
-        self.tuples.push((nums_decoded + 3, u32s.extract(3)));
+impl DecodeQuadSink<__m128i> for TupleSink {
+    fn on_quad(&mut self, quad: __m128i, nums_decoded: usize) {
+        let u32s = simd::u32x4::from(quad);
+        self.tuples.push((nums_decoded, u32s[0]));
+        self.tuples.push((nums_decoded + 1, u32s[1]));
+        self.tuples.push((nums_decoded + 2, u32s[2]));
+        self.tuples.push((nums_decoded + 3, u32s[3]));
     }
 }
 

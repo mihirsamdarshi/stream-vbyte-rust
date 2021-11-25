@@ -9,6 +9,7 @@ readme = 'README.md'
 keywords = ["varint", "stream-vbyte"]
 categories = ["encoding", "compression"]
 license-file = "LICENSE.txt"
+edition = "2018"
 
 [dependencies]
 byteorder = "1.1.0"

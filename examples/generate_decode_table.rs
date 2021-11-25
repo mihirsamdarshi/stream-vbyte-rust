@@ -13,17 +13,7 @@ fn main() {
 
         println!(
             "    ({}, {}, {}, {}), // {} = 0x{:X} = 0b{:08b}, lengths {} {} {} {}",
-            len0,
-            len1,
-            len2,
-            len3,
-            byte,
-            byte,
-            byte,
-            len0,
-            len1,
-            len2,
-            len3
+            len0, len1, len2, len3, byte, byte, byte, len0, len1, len2, len3
         );
     }
 
@@ -76,13 +66,7 @@ fn main() {
 
         println!(
             "    // {} = 0x{:X} = 0b{:08b}, lengths {} {} {} {}",
-            byte,
-            byte,
-            byte,
-            len0,
-            len1,
-            len2,
-            len3
+            byte, byte, byte, len0, len1, len2, len3
         );
         println!(
             "    [{}],",
@@ -120,13 +104,7 @@ fn main() {
 
         println!(
             "    // {} = 0x{:X} = 0b{:08b}, lengths {} {} {} {}",
-            byte,
-            byte,
-            byte,
-            len0,
-            len1,
-            len2,
-            len3
+            byte, byte, byte, len0, len1, len2, len3
         );
         println!(
             "    [{}],",

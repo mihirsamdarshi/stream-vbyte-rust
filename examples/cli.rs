@@ -1,8 +1,8 @@
 extern crate clap;
 extern crate stream_vbyte;
 
-use std::io::{BufRead, Read, Write};
 use clap::{App, Arg, SubCommand};
+use std::io::{BufRead, Read, Write};
 
 fn main() {
     let matches = App::new("stream-vbyte cli")

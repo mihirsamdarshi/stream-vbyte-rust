@@ -1,11 +1,14 @@
-#![cfg_attr(any(feature = "x86_ssse3", feature = "x86_sse41"), feature(portable_simd))]
+#![cfg_attr(
+    any(feature = "x86_ssse3", feature = "x86_sse41"),
+    feature(portable_simd)
+)]
 
 extern crate rand;
 extern crate stream_vbyte;
 
-#[cfg(feature = "x86_ssse3")]
-use std::{simd, arch::x86_64::__m128i};
 use std::cmp;
+#[cfg(feature = "x86_ssse3")]
+use std::{arch::x86_64::__m128i, simd};
 
 use self::rand::Rng;
 
@@ -14,7 +17,7 @@ use stream_vbyte::*;
 #[path = "../src/random_varint.rs"]
 mod random_varint;
 
-use random_varint::*;
+use crate::random_varint::*;
 
 const QUAD_LEN: usize = 4;
 
@@ -98,9 +101,8 @@ fn decode_cursor_sink_decode_partial_input_from_beginning_emits_complete_quads_o
 #[cfg(feature = "x86_ssse3")]
 #[test]
 fn decode_cursor_sink_decode_partial_input_from_beginning_emits_complete_quads_only_ssse3() {
-    do_decode_cursor_sink_decode_partial_input_from_beginning_emits_complete_quads_only::<
-        x86::Ssse3,
-    >()
+    do_decode_cursor_sink_decode_partial_input_from_beginning_emits_complete_quads_only::<x86::Ssse3>(
+    )
 }
 
 #[test]
@@ -371,7 +373,6 @@ where
     }
 }
 
-
 fn do_decode_cursor_skip_every_allowable_len_between_decodes<D: Decoder>()
 where
     for<'a> SliceDecodeSink<'a>: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
@@ -460,7 +461,7 @@ where
                     // the decoded data is correct
                     assert_eq!(
                         &nums[(initial_decoded_nums + skip_len)
-                                  ..(initial_decoded_nums + skip_len + final_decoded_nums)],
+                            ..(initial_decoded_nums + skip_len + final_decoded_nums)],
                         &decoded[0..final_decoded_nums]
                     );
                     // beyond the chunk wasn't overwritten
@@ -536,11 +537,9 @@ where
             let nums_decoded = cursor.decode_sink::<D, _>(&mut sink, partial_len);
 
             assert_eq!(
-                complete_quad_len,
-                nums_decoded,
+                complete_quad_len, nums_decoded,
                 "len {} partial len {}",
-                len,
-                partial_len
+                len, partial_len
             );
             assert_eq!(expected, sink.tuples);
             if partial_len % QUAD_LEN == 0 {
@@ -580,21 +579,16 @@ where
                 };
 
                 for num in 0..expected_decode_len {
-                    expected.push((
-                        num as usize,
-                        total_nums_decoded as u32 + num as u32 + 1000,
-                    ));
+                    expected.push((num as usize, total_nums_decoded as u32 + num as u32 + 1000));
                 }
 
                 let mut sink = TupleSink::new();
                 let nums_decoded = cursor.decode_sink::<D, _>(&mut sink, chunk_len);
 
                 assert_eq!(
-                    expected_decode_len,
-                    nums_decoded,
+                    expected_decode_len, nums_decoded,
                     "len {} chunk len {}",
-                    len,
-                    chunk_len
+                    len, chunk_len
                 );
                 assert_eq!(expected, sink.tuples);
 
@@ -602,11 +596,9 @@ where
             }
 
             assert_eq!(
-                len,
-                total_nums_decoded,
+                len, total_nums_decoded,
                 "len {} chunk len {}",
-                len,
-                chunk_len
+                len, chunk_len
             );
         }
     }

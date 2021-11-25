@@ -104,22 +104,25 @@
 //!
 //! The `Scalar` codec does not use unsafe.
 
-#![cfg_attr(any(feature = "x86_ssse3", feature = "x86_sse41"), feature(portable_simd))]
+#![cfg_attr(
+    any(feature = "x86_ssse3", feature = "x86_sse41"),
+    feature(portable_simd)
+)]
 extern crate byteorder;
 
 mod tables;
 
 mod scalar;
-pub use scalar::Scalar;
+pub use crate::scalar::Scalar;
 
 pub mod x86;
 
 mod encode;
-pub use encode::{encode, Encoder};
+pub use crate::encode::{encode, Encoder};
 
 mod decode;
-pub use decode::{decode, DecodeQuadSink, DecodeSingleSink, Decoder, SliceDecodeSink};
-pub use decode::cursor::DecodeCursor;
+pub use crate::decode::cursor::DecodeCursor;
+pub use crate::decode::{decode, DecodeQuadSink, DecodeSingleSink, Decoder, SliceDecodeSink};
 
 #[derive(Debug, PartialEq)]
 struct EncodedShape {
@@ -141,9 +144,7 @@ fn cumulative_encoded_len(control_bytes: &[u8]) -> usize {
     // the complete length of the encoded data, which fits in a usize
     control_bytes
         .iter()
-        .map({
-            |&b| tables::DECODE_LENGTH_PER_QUAD_TABLE[b as usize] as usize
-        })
+        .map(|&b| tables::DECODE_LENGTH_PER_QUAD_TABLE[b as usize] as usize)
         .sum()
 }
 

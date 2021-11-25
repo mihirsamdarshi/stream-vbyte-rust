@@ -1,9 +1,9 @@
 extern crate rand;
 extern crate stream_vbyte;
 
+use std::cmp;
 use std::fs::File;
 use std::io::Read;
-use std::cmp;
 
 use self::rand::Rng;
 
@@ -12,8 +12,7 @@ use stream_vbyte::*;
 #[path = "../src/random_varint.rs"]
 mod random_varint;
 
-use random_varint::*;
-
+use crate::random_varint::*;
 
 #[test]
 fn random_roundtrip_scalar_scalar() {
@@ -42,7 +41,6 @@ fn random_roundtrip_sse41_ssse3() {
 fn all_same_single_byte_scalar_scalar() {
     do_all_same_single_byte::<Scalar, Scalar>();
 }
-
 
 #[cfg(feature = "x86_sse41")]
 #[test]

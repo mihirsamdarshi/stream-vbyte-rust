@@ -1,7 +1,7 @@
 extern crate rand;
 
-use self::rand::Rng;
 use self::rand::distributions::{IndependentSample, Range};
+use self::rand::Rng;
 
 // Evenly distributed random numbers end up biased heavily towards longer encoded byte lengths:
 // there are a lot more large numbers than there are small (duh), but for exercising serialization

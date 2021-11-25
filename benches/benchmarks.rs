@@ -9,8 +9,8 @@ use std::arch::x86_64::__m128i;
 
 use self::test::Bencher;
 
-use self::rand::Rng;
 use self::rand::distributions::{IndependentSample, Range};
+use self::rand::Rng;
 
 use std::iter;
 

@@ -1,5 +1,5 @@
 use super::{decode_num_scalar, DecodeQuadSink, Decoder, SliceDecodeSink};
-use {cumulative_encoded_len, encoded_shape, EncodedShape, Scalar};
+use crate::{cumulative_encoded_len, encoded_shape, EncodedShape, Scalar};
 
 /// Offers more flexible decoding than the top-level `decode()`.
 ///
@@ -251,7 +251,7 @@ impl<'a> DecodeCursor<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use encode;
+    use crate::encode;
 
     #[test]
     #[should_panic(expected = "Must be a multiple of 4")]

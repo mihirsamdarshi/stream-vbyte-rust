@@ -1,8 +1,8 @@
 use std::cmp;
 
-use decode::{decode_num_scalar, DecodeQuadSink, Decoder};
-use encode::{encode_num_scalar, Encoder};
-use {tables, SliceDecodeSink};
+use crate::decode::{decode_num_scalar, DecodeQuadSink, Decoder};
+use crate::encode::{encode_num_scalar, Encoder};
+use crate::{tables, SliceDecodeSink};
 
 /// Encoder/Decoder that works on every platform, at the cost of speed compared to the SIMD
 /// accelerated versions.

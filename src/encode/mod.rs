@@ -2,8 +2,8 @@ use std::cmp;
 
 use byteorder::{ByteOrder, LittleEndian};
 
-use encoded_shape;
-use scalar::Scalar;
+use crate::encoded_shape;
+use crate::scalar::Scalar;
 
 #[cfg(feature = "x86_sse41")]
 pub mod sse41;

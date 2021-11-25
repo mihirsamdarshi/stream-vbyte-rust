@@ -113,16 +113,16 @@ extern crate byteorder;
 mod tables;
 
 mod scalar;
-pub use scalar::Scalar;
+pub use crate::scalar::Scalar;
 
 pub mod x86;
 
 mod encode;
-pub use encode::{encode, Encoder};
+pub use crate::encode::{encode, Encoder};
 
 mod decode;
-pub use decode::cursor::DecodeCursor;
-pub use decode::{decode, DecodeQuadSink, DecodeSingleSink, Decoder, SliceDecodeSink};
+pub use crate::decode::cursor::DecodeCursor;
+pub use crate::decode::{decode, DecodeQuadSink, DecodeSingleSink, Decoder, SliceDecodeSink};
 
 #[derive(Debug, PartialEq)]
 struct EncodedShape {

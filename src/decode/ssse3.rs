@@ -3,7 +3,7 @@ use std::cmp;
 use std::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_shuffle_epi8, _mm_storeu_si128};
 
 use super::{DecodeQuadSink, Decoder};
-use {tables, SliceDecodeSink};
+use crate::{tables, SliceDecodeSink};
 
 /// Decoder using SSSE3 instructions.
 pub struct Ssse3;
@@ -78,7 +78,7 @@ impl<'a> DecodeQuadSink<__m128i> for SliceDecodeSink<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use *;
+    use crate::*;
 
     #[test]
     fn reads_all_requested_control_bytes_when_12_extra_input_bytes() {

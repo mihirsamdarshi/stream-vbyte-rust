@@ -5,7 +5,7 @@ use std::{
     simd,
 };
 
-use tables;
+use crate::tables;
 
 use super::Encoder;
 
@@ -132,7 +132,7 @@ impl Encoder for Sse41 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use *;
+    use crate::*;
 
     #[test]
     fn encodes_all_but_last_3_control_bytes() {

@@ -17,7 +17,7 @@ use stream_vbyte::*;
 #[path = "../src/random_varint.rs"]
 mod random_varint;
 
-use random_varint::*;
+use crate::random_varint::*;
 
 const QUAD_LEN: usize = 4;
 

@@ -1,5 +1,9 @@
-use std::{simd, arch::x86_64::{__m128i, _mm_loadu_si128, _mm_min_epu8, _mm_mullo_epi32,
-                            _mm_shuffle_epi8, _mm_storeu_si128}};
+use std::{
+    arch::x86_64::{
+        __m128i, _mm_loadu_si128, _mm_min_epu8, _mm_mullo_epi32, _mm_shuffle_epi8, _mm_storeu_si128,
+    },
+    simd,
+};
 
 use tables;
 
@@ -44,18 +48,10 @@ impl Encoder for Sse41 {
         // TODO these load unaligned once https://github.com/rust-lang/rust/issues/33626
         // hits stable
         let ones = unsafe { _mm_loadu_si128(ONES.as_ptr() as *const __m128i) };
-        let shifts = unsafe {
-            _mm_loadu_si128(SHIFTS.as_ptr() as *const __m128i)
-        };
-        let lanecodes = unsafe {
-            _mm_loadu_si128(LANECODES.as_ptr() as *const __m128i)
-        };
-        let gather_hi = unsafe {
-            _mm_loadu_si128(GATHER_HI.as_ptr() as *const __m128i)
-        };
-        let aggregators = unsafe {
-            _mm_loadu_si128(AGGREGATORS.as_ptr() as *const __m128i)
-        };
+        let shifts = unsafe { _mm_loadu_si128(SHIFTS.as_ptr() as *const __m128i) };
+        let lanecodes = unsafe { _mm_loadu_si128(LANECODES.as_ptr() as *const __m128i) };
+        let gather_hi = unsafe { _mm_loadu_si128(GATHER_HI.as_ptr() as *const __m128i) };
+        let aggregators = unsafe { _mm_loadu_si128(AGGREGATORS.as_ptr() as *const __m128i) };
 
         // Encoding writes 16 bytes at a time, but if numbers are encoded with 1 byte each, that
         // means the last 3 quads could write past what is actually necessary. So, don't process
@@ -64,8 +60,7 @@ impl Encoder for Sse41 {
 
         for control_byte in &mut control_bytes[0..control_byte_limit].iter_mut() {
             let to_encode = unsafe {
-                _mm_loadu_si128(input[nums_encoded..(nums_encoded + 4)].as_ptr()
-                    as *const __m128i)
+                _mm_loadu_si128(input[nums_encoded..(nums_encoded + 4)].as_ptr() as *const __m128i)
             };
 
             // clamp each byte to 1 if nonzero
@@ -102,8 +97,7 @@ impl Encoder for Sse41 {
 
             // Assemble 2 copies of the high byte from each of the 4 numbers.
             // The first copy will be used to calculate the control byte, the second the length.
-            let hi_bytes =
-                unsafe { _mm_shuffle_epi8(shuffled_lanecodes, gather_hi) };
+            let hi_bytes = unsafe { _mm_shuffle_epi8(shuffled_lanecodes, gather_hi) };
 
             // use CONCAT to shift the lane code bits from bytes 0-3 into 1 byte (byte 3)
             // use SUM to sum lane code bits from bytes 4-7 into 1 byte (byte 7)
@@ -114,9 +108,7 @@ impl Encoder for Sse41 {
             let length = bytes[7] + 4;
 
             let mask_bytes = tables::X86_ENCODE_SHUFFLE_TABLE[code as usize];
-            let encode_mask = unsafe {
-                _mm_loadu_si128(mask_bytes.as_ptr() as *const __m128i)
-            };
+            let encode_mask = unsafe { _mm_loadu_si128(mask_bytes.as_ptr() as *const __m128i) };
 
             let encoded = unsafe { _mm_shuffle_epi8(to_encode, encode_mask) };
 
@@ -140,7 +132,7 @@ impl Encoder for Sse41 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::*;
+    use *;
 
     #[test]
     fn encodes_all_but_last_3_control_bytes() {
@@ -184,14 +176,14 @@ mod tests {
             };
 
             assert!(&encoded[control_bytes_len + bytes_written
-                         ..control_bytes_len + bytes_written
-                             + trailing_zero_len]
+                ..control_bytes_len + bytes_written + trailing_zero_len]
                 .iter()
                 .all(|&i| i == 0));
-            assert!(&encoded[control_bytes_len + bytes_written
-                         + trailing_zero_len..]
-                .iter()
-                .all(|&i| i == 0xFF));
+            assert!(
+                &encoded[control_bytes_len + bytes_written + trailing_zero_len..]
+                    .iter()
+                    .all(|&i| i == 0xFF)
+            );
         }
     }
 }

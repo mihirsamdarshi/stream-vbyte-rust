@@ -133,5 +133,4 @@ mod tests {
         assert_eq!(4, encode_num_scalar(u32::max_value(), &mut buf));
         assert_eq!(&[0xFF_u8, 0xFF_u8, 0xFF_u8, 0xFF_u8], &buf);
     }
-
 }

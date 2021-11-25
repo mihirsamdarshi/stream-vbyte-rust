@@ -7,10 +7,10 @@ pub mod random_varint;
 
 use self::random_varint::*;
 
-use ::*;
 use cumulative_encoded_len;
 use decode::decode_num_scalar;
 use encode::encode_num_scalar;
+use *;
 
 #[test]
 fn encode_decode_roundtrip_random() {

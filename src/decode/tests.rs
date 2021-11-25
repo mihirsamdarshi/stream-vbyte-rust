@@ -53,7 +53,6 @@ fn decode_num_1_byte() {
     assert_eq!(1, decode_num_scalar(1, &vec![1]));
 }
 
-
 #[test]
 fn decoder_honors_nums_to_decode_scalar() {
     // scalar should be able to decode all control bytes regardless of remaining input

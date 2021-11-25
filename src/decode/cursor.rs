@@ -1,5 +1,5 @@
-use {cumulative_encoded_len, encoded_shape, EncodedShape, Scalar};
 use super::{decode_num_scalar, DecodeQuadSink, Decoder, SliceDecodeSink};
+use {cumulative_encoded_len, encoded_shape, EncodedShape, Scalar};
 
 /// Offers more flexible decoding than the top-level `decode()`.
 ///

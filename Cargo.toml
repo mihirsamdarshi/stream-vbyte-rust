@@ -11,9 +11,6 @@ categories = ["encoding", "compression"]
 license-file = "LICENSE.txt"
 edition = "2018"
 
-[dependencies]
-byteorder = "1.4.3"
-
 [dev-dependencies]
 rand = "0.3.16"
 clap = "2.26.2"

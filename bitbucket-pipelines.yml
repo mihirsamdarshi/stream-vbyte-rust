@@ -5,7 +5,6 @@ pipelines:
     - step:
         caches:
           - cargo
-          - rust-target
         script:
           - cargo test
           - rustup toolchain install nightly
@@ -17,4 +16,3 @@ pipelines:
 definitions:
   caches:
     cargo: /usr/local/cargo # CARGO_HOME
-    rust-target: $BITBUCKET_CLONE_DIR/target

@@ -1,5 +1,10 @@
-use super::{decode_num_scalar, DecodeQuadSink, Decoder, SliceDecodeSink};
-use crate::{cumulative_encoded_len, encoded_shape, EncodedShape, Scalar};
+use crate::{
+    cumulative_encoded_len,
+    decode::{decode_num_scalar, DecodeQuadSink, Decoder, SliceDecodeSink, WriteQuadToSlice},
+    encoded_shape,
+    scalar::Scalar,
+    EncodedShape,
+};
 
 /// Offers more flexible decoding than the top-level `decode()`.
 ///
@@ -21,7 +26,7 @@ use crate::{cumulative_encoded_len, encoded_shape, EncodedShape, Scalar};
 /// (`DecodeQuadSink`), and one for any trailing leftover numbers that may not fill a quad
 /// (`DecodeSingleSink`). You will need to implement both with the appropriate
 /// `Decoder::DecodedQuad` type for the `Decoder` you are using. You can look at the implementations
-/// of `SliceDecodeSink` (used for `decode_slice()`) or `TupleSink` in the tests for examples.
+/// of `TupleSink` in the tests for examples.
 ///
 /// # Examples
 ///
@@ -29,14 +34,16 @@ use crate::{cumulative_encoded_len, encoded_shape, EncodedShape, Scalar};
 /// anywhere. (Unfortunately, due to a Rust bug I cannot include a SIMD example in a doc test.)
 ///
 /// ```
-/// extern crate rand;
-/// extern crate stream_vbyte;
-///
 /// use std::cmp;
 ///
 /// use rand::Rng;
 ///
-/// use stream_vbyte::DecodeSingleSink;
+/// use stream_vbyte::{
+///     encode::encode,
+///     decode::{DecodeSingleSink, DecodeQuadSink, cursor::DecodeCursor},
+///     scalar::{Scalar, UnusedQuad},
+///     decode_quad_scalar
+/// };
 ///
 /// struct MaxSink {
 ///     max: u32
@@ -50,18 +57,18 @@ use crate::{cumulative_encoded_len, encoded_shape, EncodedShape, Scalar};
 ///     }
 /// }
 ///
-/// impl stream_vbyte::DecodeSingleSink for MaxSink {
+/// // Update the max as each number is decoded
+/// impl DecodeSingleSink for MaxSink {
 ///     fn on_number(&mut self, num: u32, _nums_decoded: usize) {
 ///         self.max = cmp::max(self.max, num)
 ///     }
 /// }
 ///
-/// impl stream_vbyte::DecodeQuadSink<()> for MaxSink {
-///     fn on_quad(&mut self, _quad: (), _nums_decoded: usize) {
-///         // on_quad not used if type is ()
-///         panic!("Should never be called")
-///     }
-/// }
+/// // DecodeQuadSink is not used for `Scalar` decoder, but the type system insists
+/// // on implementing it. This macro generates a stub impl.
+/// decode_quad_scalar!(MaxSink);
+/// // If this was using, say, the `Ssse3` decoder, would need a DecodeQuadSink impl to
+/// // find the max `u32` in a `__m128i`, perhaps with `_mm_max_epu32` (SSE 4.1).
 ///
 /// fn main() {
 ///     let mut nums = vec![1, 2, 3, 5, 8, 13, 21, 34];
@@ -71,11 +78,11 @@ use crate::{cumulative_encoded_len, encoded_shape, EncodedShape, Scalar};
 ///     rng.shuffle(&mut nums[..]);
 ///
 ///     let mut encoded = vec![0; nums.len() * 5];
-///     stream_vbyte::encode::<stream_vbyte::Scalar>(&nums, &mut encoded);
+///     encode::<Scalar>(&nums, &mut encoded);
 ///
-///     let mut cursor = stream_vbyte::DecodeCursor::new(&encoded, nums.len());
+///     let mut cursor = DecodeCursor::new(&encoded, nums.len());
 ///     let mut sink = MaxSink::new();
-///     cursor.decode_sink::<stream_vbyte::Scalar, _>(&mut sink, nums.len());
+///     cursor.decode_sink::<Scalar, _>(&mut sink, nums.len());
 ///
 ///     assert_eq!(34, sink.max);
 /// }
@@ -143,10 +150,7 @@ impl<'a> DecodeCursor<'a> {
     ///
     /// Returns the number of numbers decoded by this invocation, which may be less than the size
     /// of the buffer.
-    pub fn decode_slice<D: Decoder>(&mut self, output: &mut [u32]) -> usize
-    where
-        for<'b> SliceDecodeSink<'b>: DecodeQuadSink<D::DecodedQuad>,
-    {
+    pub fn decode_slice<D: Decoder + WriteQuadToSlice>(&mut self, output: &mut [u32]) -> usize {
         let output_len = output.len();
 
         let mut sink = SliceDecodeSink::new(output);
@@ -169,7 +173,8 @@ impl<'a> DecodeCursor<'a> {
     pub fn decode_sink<D, S>(&mut self, sink: &mut S, max_numbers_to_decode: usize) -> usize
     where
         D: Decoder,
-        S: DecodeQuadSink<D::DecodedQuad> + DecodeQuadSink<<Scalar as Decoder>::DecodedQuad>,
+        // must support scalar decodes for leftover numbers
+        S: DecodeQuadSink<D> + DecodeQuadSink<Scalar>,
     {
         let start_nums_decoded = self.nums_decoded;
         let mut complete_quad_nums_decoded_this_invocation;
@@ -251,7 +256,7 @@ impl<'a> DecodeCursor<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::encode;
+    use crate::encode::encode;
 
     #[test]
     #[should_panic(expected = "Must be a multiple of 4")]
@@ -277,7 +282,7 @@ mod tests {
         let mut encoded = Vec::new();
         encoded.resize(nums.len() * 5, 0);
 
-        let encoded_len = encode::encode::<Scalar>(&nums, &mut encoded);
+        let encoded_len = encode::<Scalar>(&nums, &mut encoded);
         let mut cursor = DecodeCursor::new(&encoded[0..encoded_len], nums.len());
 
         assert!(cursor.has_more());

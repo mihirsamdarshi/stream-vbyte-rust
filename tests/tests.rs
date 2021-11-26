@@ -1,13 +1,17 @@
-extern crate rand;
-extern crate stream_vbyte;
-
 use std::cmp;
 use std::fs::File;
 use std::io::Read;
 
-use self::rand::Rng;
+use rand::Rng;
 
-use stream_vbyte::*;
+use stream_vbyte::{
+    decode::{decode, Decoder, WriteQuadToSlice},
+    encode::{encode, Encoder},
+    scalar::Scalar,
+};
+
+#[cfg(feature = "x86_sse41")]
+use stream_vbyte::x86;
 
 #[path = "../src/random_varint.rs"]
 mod random_varint;
@@ -82,10 +86,7 @@ fn encode_sse41_compare_reference_impl() {
     do_compare_reference_data::<x86::Sse41>()
 }
 
-fn do_random_roundtrip<E: Encoder, D: Decoder>()
-where
-    for<'a> SliceDecodeSink<'a>: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
-{
+fn do_random_roundtrip<E: Encoder, D: Decoder + WriteQuadToSlice>() {
     let mut nums: Vec<u32> = Vec::new();
     let mut encoded = Vec::new();
     let mut decoded = Vec::new();
@@ -123,7 +124,7 @@ where
             decode::<D>(
                 &encoded[0..encoded_len],
                 count,
-                &mut decoded[0..decoded_len]
+                &mut decoded[0..decoded_len],
             )
         );
         // extra u32s in decoded were not touched
@@ -135,10 +136,7 @@ where
     }
 }
 
-fn do_all_same_single_byte<E: Encoder, D: Decoder>()
-where
-    for<'a> SliceDecodeSink<'a>: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
-{
+fn do_all_same_single_byte<E: Encoder, D: Decoder + WriteQuadToSlice>() {
     let mut nums: Vec<u32> = Vec::new();
     let mut encoded: Vec<u8> = Vec::new();
     let mut decoded: Vec<u32> = Vec::new();
@@ -190,7 +188,7 @@ where
                 decode::<D>(
                     &encoded[0..encoded_len],
                     count,
-                    &mut decoded[0..decoded_len]
+                    &mut decoded[0..decoded_len],
                 )
             );
             // extra u32s in decoded were not touched
@@ -237,13 +235,13 @@ fn do_partial_final_quad_roundtrip_scalar<E: Encoder>() {
 
     // output, broken down by number
     #[cfg_attr(rustfmt, rustfmt_skip)]
-    let expected = vec![0xE4, 0x09,
-                                 0x00,
-                                 0x00, 0x01,
-                                 0x00, 0x00, 0x03,
-                                 0x00, 0x00, 0x00, 0x07,
-                                 0x00, 0x02,
-                                 0x00, 0x00, 0x04];
+        let expected = vec![0xE4, 0x09,
+                            0x00,
+                            0x00, 0x01,
+                            0x00, 0x00, 0x03,
+                            0x00, 0x00, 0x00, 0x07,
+                            0x00, 0x02,
+                            0x00, 0x00, 0x04];
     assert_eq!(&expected[..], &encoded[0..encoded_len]);
 
     let mut decoded = Vec::new();

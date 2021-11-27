@@ -2,8 +2,8 @@ use std::cmp;
 
 use std::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_shuffle_epi8, _mm_storeu_si128};
 
-use super::{DecodeQuadSink, Decoder};
-use crate::{tables, SliceDecodeSink};
+use super::{DecodeQuadSink, Decoder, WriteQuadToSlice};
+use crate::tables;
 
 /// Decoder using SSSE3 instructions.
 pub struct Ssse3;
@@ -11,7 +11,7 @@ pub struct Ssse3;
 impl Decoder for Ssse3 {
     type DecodedQuad = __m128i;
 
-    fn decode_quads<S: DecodeQuadSink<Self::DecodedQuad>>(
+    fn decode_quads<S: DecodeQuadSink<Self>>(
         control_bytes: &[u8],
         encoded_nums: &[u8],
         control_bytes_to_decode: usize,
@@ -61,24 +61,16 @@ impl Decoder for Ssse3 {
     }
 }
 
-/// Used for SSSE3 decoding.
-impl<'a> DecodeQuadSink<__m128i> for SliceDecodeSink<'a> {
-    #[inline]
-    fn on_quad(&mut self, quad: __m128i, nums_decoded: usize) {
-        unsafe {
-            // using slice size to make sure it's ok to write 4 u32s
-            _mm_storeu_si128(
-                self.output[nums_decoded..(nums_decoded + 4)].as_ptr() as *mut __m128i,
-                quad,
-            )
-        }
+impl WriteQuadToSlice for Ssse3 {
+    fn write_quad_to_slice(quad: Self::DecodedQuad, slice: &mut [u32]) {
+        unsafe { _mm_storeu_si128(slice.as_ptr() as *mut __m128i, quad) }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::*;
+    use crate::{cumulative_encoded_len, decode::SliceDecodeSink, encode::encode, scalar::Scalar};
 
     #[test]
     fn reads_all_requested_control_bytes_when_12_extra_input_bytes() {

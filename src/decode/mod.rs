@@ -1,5 +1,3 @@
-use byteorder::{ByteOrder, LittleEndian};
-
 pub mod cursor;
 
 #[cfg(feature = "x86_ssse3")]
@@ -30,7 +28,7 @@ pub trait Decoder {
     ///
     /// Returns a tuple of the number of numbers decoded (always a multiple of 4; at most
     /// `4 * max_control_bytes_to_decode`) and the number of bytes read from `encoded_nums`.
-    fn decode_quads<S: DecodeQuadSink<Self::DecodedQuad>>(
+    fn decode_quads<S: DecodeQuadSink<Self>>(
         control_bytes: &[u8],
         encoded_nums: &[u8],
         max_control_bytes_to_decode: usize,
@@ -39,16 +37,11 @@ pub trait Decoder {
     ) -> (usize, usize);
 }
 
-/// Receives numbers decoded via a Decoder in `DecodeCursor.decode_sink()`.
-///
-/// Since stream-vbyte is oriented around groups of 4 numbers, some decoders will expose decoded
-/// numbers in some decoder-specific datatype. Or, if that is not applicable for a particular
-/// `Decoder` implementation, `()` will be used, and all decoded numbers will instead be passed to
-/// `DecodeSingleSink.on_number()`.
-pub trait DecodeQuadSink<T>: DecodeSingleSink {
-    /// `nums_decoded` is the number of numbers that have already been decoded before this quad
-    /// in the current invocation of `DecodeCursor.decode_sink()`.
-    fn on_quad(&mut self, quad: T, nums_decoded: usize);
+/// For decoders that wish to support slice-based features like the top-level
+/// `decode()` or DecodeCursor's `decode_slice()`.
+pub trait WriteQuadToSlice: Decoder {
+    /// Write a quad into a size-4 slice.
+    fn write_quad_to_slice(quad: Self::DecodedQuad, slice: &mut [u32]);
 }
 
 /// Receives numbers decoded via a Decoder in `DecodeCursor.decode_sink()` that weren't handed to
@@ -60,18 +53,20 @@ pub trait DecodeSingleSink {
     fn on_number(&mut self, num: u32, nums_decoded: usize);
 }
 
-impl<'a> DecodeSingleSink for SliceDecodeSink<'a> {
-    #[inline]
-    fn on_number(&mut self, num: u32, nums_decoded: usize) {
-        self.output[nums_decoded] = num;
-    }
+/// Receives numbers decoded via a Decoder in `DecodeCursor.decode_sink()`.
+///
+/// Since stream-vbyte is oriented around groups of 4 numbers, some decoders will expose decoded
+/// numbers in some decoder-specific datatype. Or, if that is not applicable for a particular
+/// `Decoder` implementation, all decoded numbers will instead be passed to
+/// `DecodeSingleSink.on_number()`.
+pub trait DecodeQuadSink<D: Decoder + ?Sized>: DecodeSingleSink {
+    /// `nums_decoded` is the number of numbers that have already been decoded before this quad
+    /// in the current invocation of `DecodeCursor.decode_sink()`.
+    fn on_quad(&mut self, quad: D::DecodedQuad, nums_decoded: usize);
 }
 
 /// A sink for writing to a slice.
-///
-/// Has to be public because it's in trait bounds on `decode()`.
-#[doc(hidden)]
-pub struct SliceDecodeSink<'a> {
+pub(crate) struct SliceDecodeSink<'a> {
     output: &'a mut [u32],
 }
 
@@ -84,6 +79,19 @@ impl<'a> SliceDecodeSink<'a> {
     }
 }
 
+impl<'a> DecodeSingleSink for SliceDecodeSink<'a> {
+    #[inline]
+    fn on_number(&mut self, num: u32, nums_decoded: usize) {
+        self.output[nums_decoded] = num;
+    }
+}
+
+impl<'a, D: Decoder + WriteQuadToSlice> DecodeQuadSink<D> for SliceDecodeSink<'a> {
+    fn on_quad(&mut self, quad: D::DecodedQuad, nums_decoded: usize) {
+        D::write_quad_to_slice(quad, &mut self.output[nums_decoded..(nums_decoded + 4)]);
+    }
+}
+
 /// Decode `count` numbers from `input`, writing them to `output`.
 ///
 /// The `count` must be the same as the number of items originally encoded.
@@ -91,10 +99,11 @@ impl<'a> SliceDecodeSink<'a> {
 /// `output` must be at least of size 4, and must be large enough for all `count` numbers.
 ///
 /// Returns the number of bytes read from `input`.
-pub fn decode<D: Decoder>(input: &[u8], count: usize, output: &mut [u32]) -> usize
-where
-    for<'a> SliceDecodeSink<'a>: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
-{
+pub fn decode<D: Decoder + WriteQuadToSlice>(
+    input: &[u8],
+    count: usize,
+    output: &mut [u32],
+) -> usize {
     let mut cursor = cursor::DecodeCursor::new(&input, count);
 
     assert_eq!(
@@ -111,5 +120,5 @@ pub fn decode_num_scalar(len: usize, input: &[u8]) -> u32 {
     let mut buf = [0_u8; 4];
     buf[0..len].copy_from_slice(&input[0..len]);
 
-    LittleEndian::read_u32(&buf)
+    u32::from_le_bytes(buf)
 }

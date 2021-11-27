@@ -1,16 +1,17 @@
-extern crate rand;
-
-use self::rand::Rng;
+use rand::Rng;
 
 #[path = "random_varint.rs"]
 pub mod random_varint;
 
 use self::random_varint::*;
 
-use crate::cumulative_encoded_len;
-use crate::decode::decode_num_scalar;
-use crate::encode::encode_num_scalar;
-use crate::*;
+use crate::{
+    cumulative_encoded_len,
+    decode::decode_num_scalar,
+    encode::{encode, encode_num_scalar},
+    scalar::Scalar,
+    *,
+};
 
 #[test]
 fn encode_decode_roundtrip_random() {

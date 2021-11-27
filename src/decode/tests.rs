@@ -1,8 +1,6 @@
-extern crate rand;
+use rand::Rng;
 
-use self::rand::Rng;
-
-use crate::{cumulative_encoded_len, encode, Scalar};
+use crate::{cumulative_encoded_len, encode::encode, scalar::Scalar};
 
 use super::*;
 #[cfg(feature = "x86_ssse3")]
@@ -69,10 +67,9 @@ fn decoder_honors_nums_to_decode_ssse3() {
     decoder_honors_nums_to_decode::<x86::Ssse3>(3);
 }
 
-fn decoder_honors_nums_to_decode<D: Decoder>(control_byte_limit_fudge_factor: usize)
-where
-    for<'a> SliceDecodeSink<'a>: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
-{
+fn decoder_honors_nums_to_decode<D: Decoder + WriteQuadToSlice>(
+    control_byte_limit_fudge_factor: usize,
+) {
     let mut nums: Vec<u32> = Vec::new();
     let mut encoded = Vec::new();
     let mut decoded = Vec::new();

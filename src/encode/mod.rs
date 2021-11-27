@@ -1,7 +1,5 @@
 use std::cmp;
 
-use byteorder::{ByteOrder, LittleEndian};
-
 use crate::encoded_shape;
 use crate::scalar::Scalar;
 
@@ -88,8 +86,7 @@ pub fn encode<E: Encoder>(input: &[u32], output: &mut [u8]) -> usize {
 pub fn encode_num_scalar(num: u32, output: &mut [u8]) -> usize {
     // this will calculate 0_u32 as taking 0 bytes, so ensure at least 1 byte
     let len = cmp::max(1_usize, 4 - num.leading_zeros() as usize / 8);
-    let mut buf = [0_u8; 4];
-    LittleEndian::write_u32(&mut buf, num);
+    let buf = num.to_le_bytes();
 
     for i in 0..len {
         output[i] = buf[i];
@@ -130,7 +127,7 @@ mod tests {
     fn encode_num_u32_max() {
         let mut buf = [0; 4];
 
-        assert_eq!(4, encode_num_scalar(u32::max_value(), &mut buf));
+        assert_eq!(4, encode_num_scalar(u32::MAX, &mut buf));
         assert_eq!(&[0xFF_u8, 0xFF_u8, 0xFF_u8, 0xFF_u8], &buf);
     }
 }

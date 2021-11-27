@@ -1,7 +1,8 @@
 # 0.4.0
 
 - User-provided decode sinks
-
+- Rearrange modules
+- Rust edition 2018
 
 # 0.3.1, 0.3.2
 

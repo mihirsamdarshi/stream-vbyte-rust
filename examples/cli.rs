@@ -1,8 +1,6 @@
-extern crate clap;
-extern crate stream_vbyte;
-
 use clap::{App, Arg, SubCommand};
 use std::io::{BufRead, Read, Write};
+use stream_vbyte::{decode::decode, encode::encode, scalar::Scalar};
 
 fn main() {
     let matches = App::new("stream-vbyte cli")
@@ -20,7 +18,7 @@ fn main() {
         .get_matches();
 
     match matches.subcommand_name() {
-        Some("enc") => encode(),
+        Some("enc") => run_encode(),
         Some("dec") => {
             let count: usize = matches
                 .subcommand_matches("dec")
@@ -30,13 +28,13 @@ fn main() {
                 .parse()
                 .expect("count must be an int");
 
-            decode(count);
+            run_decode(count);
         }
         _ => println!("Invalid subcommand"),
     }
 }
 
-fn encode() {
+fn run_encode() {
     let stdin = std::io::stdin();
     let stdin_handle = stdin.lock();
 
@@ -48,7 +46,7 @@ fn encode() {
 
     let mut encoded = Vec::new();
     encoded.resize(nums.len() * 5, 0);
-    let encoded_len = stream_vbyte::encode::<stream_vbyte::Scalar>(&nums, &mut encoded);
+    let encoded_len = encode::<Scalar>(&nums, &mut encoded);
 
     let stdout = std::io::stdout();
     let mut stdout_handle = stdout.lock();
@@ -59,7 +57,7 @@ fn encode() {
     eprintln!("Encoded {} numbers", nums.len());
 }
 
-fn decode(count: usize) {
+fn run_decode(count: usize) {
     let stdin = std::io::stdin();
     let mut stdin_handle = stdin.lock();
 
@@ -70,7 +68,7 @@ fn decode(count: usize) {
 
     let mut decoded = Vec::new();
     decoded.resize(count, 0);
-    stream_vbyte::decode::<stream_vbyte::Scalar>(&encoded, count, &mut decoded);
+    decode::<Scalar>(&encoded, count, &mut decoded);
 
     for d in &decoded {
         println!("{}", d);

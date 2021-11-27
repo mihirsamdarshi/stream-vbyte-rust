@@ -33,12 +33,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4efd02e230a02e18f92fc2735f44597385ed02ad8f831e7c1c1156ee5e1ab3a5"
 
 [[package]]
-name = "byteorder"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff81738b726f5d099632ceaffe7fb65b90212e8dce59d518729e7e8634032d3d"
-
-[[package]]
 name = "clap"
 version = "2.26.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -131,9 +125,8 @@ dependencies = [
 
 [[package]]
 name = "stream-vbyte"
-version = "0.3.2"
+version = "0.4.0"
 dependencies = [
- "byteorder",
  "clap",
  "rand",
 ]

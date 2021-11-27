@@ -58,7 +58,11 @@
 //! Encode some numbers to bytes, then decode them in different ways.
 //!
 //! ```
-//! use stream_vbyte::*;
+//! use stream_vbyte::{
+//!     encode::encode,
+//!     decode::{decode, cursor::DecodeCursor},
+//!     scalar::Scalar
+//! };
 //!
 //! let nums: Vec<u32> = (0..12_345).collect();
 //! let mut encoded_data = Vec::new();
@@ -108,21 +112,14 @@
     any(feature = "x86_ssse3", feature = "x86_sse41"),
     feature(portable_simd)
 )]
-extern crate byteorder;
 
 mod tables;
 
-mod scalar;
-pub use crate::scalar::Scalar;
+pub mod decode;
+pub mod encode;
 
+pub mod scalar;
 pub mod x86;
-
-mod encode;
-pub use crate::encode::{encode, Encoder};
-
-mod decode;
-pub use crate::decode::cursor::DecodeCursor;
-pub use crate::decode::{decode, DecodeQuadSink, DecodeSingleSink, Decoder, SliceDecodeSink};
 
 #[derive(Debug, PartialEq)]
 struct EncodedShape {

@@ -1,20 +1,27 @@
 #![feature(test)]
 
-extern crate rand;
-extern crate stream_vbyte;
-extern crate test;
-
 #[cfg(feature = "x86_ssse3")]
 use std::arch::x86_64::__m128i;
 
-use self::test::Bencher;
+extern crate test;
 
-use self::rand::distributions::{IndependentSample, Range};
-use self::rand::Rng;
+use test::Bencher;
+
+use rand::distributions::{IndependentSample, Range};
+use rand::Rng;
 
 use std::iter;
 
-use stream_vbyte::*;
+#[cfg(feature = "x86_ssse3")]
+use stream_vbyte::x86::{self, Ssse3};
+use stream_vbyte::{
+    decode::{
+        cursor::DecodeCursor, decode, DecodeQuadSink, DecodeSingleSink, Decoder, WriteQuadToSlice,
+    },
+    decode_quad_scalar,
+    encode::{encode, Encoder},
+    scalar::Scalar,
+};
 
 #[bench]
 fn encode_scalar_rand_1k(b: &mut Bencher) {
@@ -205,7 +212,7 @@ fn skip_all_1m(b: &mut Bencher) {
     }
 
     encoded.resize(nums.len() * 5, 0);
-    let bytes_written = stream_vbyte::encode::<Scalar>(&nums, &mut encoded);
+    let bytes_written = encode::<Scalar>(&nums, &mut encoded);
 
     decoded.resize(nums.len(), 0);
     b.iter(|| {
@@ -224,15 +231,16 @@ fn do_encode_bench<I: Iterator<Item = u32>, E: Encoder>(b: &mut Bencher, iter: I
     encoded.resize(nums.len() * 5, 0);
 
     b.iter(|| {
-        let _ = stream_vbyte::encode::<E>(&nums, &mut encoded);
+        let _ = encode::<E>(&nums, &mut encoded);
     });
 }
 
 // take a decoder param to save us some typing -- type inference won't work if you only specify some
 // of the generic types
-fn do_decode_bench<I: Iterator<Item = u32>, D: Decoder>(b: &mut Bencher, iter: I, _decoder: D)
+fn do_decode_bench<I, D>(b: &mut Bencher, iter: I, _decoder: D)
 where
-    for<'a> SliceDecodeSink<'a>: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
+    I: Iterator<Item = u32>,
+    D: Decoder + WriteQuadToSlice,
 {
     let mut nums: Vec<u32> = Vec::new();
     let mut encoded = Vec::new();
@@ -243,20 +251,18 @@ where
     }
 
     encoded.resize(nums.len() * 5, 0);
-    let bytes_written = stream_vbyte::encode::<Scalar>(&nums, &mut encoded);
+    let bytes_written = encode::<Scalar>(&nums, &mut encoded);
 
     decoded.resize(nums.len(), 0);
     b.iter(|| {
-        stream_vbyte::decode::<D>(&encoded[0..bytes_written], nums.len(), &mut decoded);
+        decode::<D>(&encoded[0..bytes_written], nums.len(), &mut decoded);
     });
 }
 
-fn do_decode_cursor_slice_bench<I: Iterator<Item = u32>, D: Decoder>(
-    b: &mut Bencher,
-    iter: I,
-    _decoder: D,
-) where
-    for<'a> SliceDecodeSink<'a>: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
+fn do_decode_cursor_slice_bench<I, D>(b: &mut Bencher, iter: I, _decoder: D)
+where
+    I: Iterator<Item = u32>,
+    D: Decoder + WriteQuadToSlice,
 {
     let mut nums: Vec<u32> = Vec::new();
     let mut encoded = Vec::new();
@@ -267,7 +273,7 @@ fn do_decode_cursor_slice_bench<I: Iterator<Item = u32>, D: Decoder>(
     }
 
     encoded.resize(nums.len() * 5, 0);
-    let _ = stream_vbyte::encode::<Scalar>(&nums, &mut encoded);
+    let _ = encode::<Scalar>(&nums, &mut encoded);
 
     decoded.resize(nums.len(), 0);
     b.iter(|| {
@@ -281,7 +287,7 @@ fn do_decode_cursor_sink_no_op_bench<I: Iterator<Item = u32>, D: Decoder>(
     iter: I,
     _decoder: D,
 ) where
-    NoOpSink: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
+    NoOpSink: DecodeQuadSink<D>,
 {
     let mut nums: Vec<u32> = Vec::new();
     let mut encoded = Vec::new();
@@ -291,7 +297,7 @@ fn do_decode_cursor_sink_no_op_bench<I: Iterator<Item = u32>, D: Decoder>(
     }
 
     encoded.resize(nums.len() * 5, 0);
-    let _ = stream_vbyte::encode::<Scalar>(&nums, &mut encoded);
+    let _ = encode::<Scalar>(&nums, &mut encoded);
 
     b.iter(|| {
         let mut cursor = DecodeCursor::new(&encoded, nums.len());
@@ -314,7 +320,7 @@ impl<R: Rng> RandomVarintEncodedLengthIter<R> {
                 Range::new(0, 1 << 8),
                 Range::new(1 << 8, 1 << 16),
                 Range::new(1 << 16, 1 << 24),
-                Range::new(1 << 24, u32::max_value()), // this won't ever emit the max value, sadly
+                Range::new(1 << 24, u32::MAX), // this won't ever emit the max value, sadly
             ],
             range_for_picking_range: Range::new(0, 4),
             rng,
@@ -339,11 +345,9 @@ impl DecodeSingleSink for NoOpSink {
     fn on_number(&mut self, _num: u32, _nums_decoded: usize) {}
 }
 
-impl DecodeQuadSink<()> for NoOpSink {
-    fn on_quad(&mut self, _quad: (), _nums_decoded: usize) {}
-}
+decode_quad_scalar!(NoOpSink);
 
 #[cfg(feature = "x86_ssse3")]
-impl DecodeQuadSink<__m128i> for NoOpSink {
+impl DecodeQuadSink<Ssse3> for NoOpSink {
     fn on_quad(&mut self, _quad: __m128i, _nums_decoded: usize) {}
 }

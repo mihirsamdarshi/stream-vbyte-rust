@@ -1,8 +1,10 @@
 use std::cmp;
 
-use crate::decode::{decode_num_scalar, DecodeQuadSink, Decoder};
-use crate::encode::{encode_num_scalar, Encoder};
-use crate::{tables, SliceDecodeSink};
+use crate::{
+    decode::{decode_num_scalar, DecodeQuadSink, Decoder, WriteQuadToSlice},
+    encode::{encode_num_scalar, Encoder},
+    tables,
+};
 
 /// Encoder/Decoder that works on every platform, at the cost of speed compared to the SIMD
 /// accelerated versions.
@@ -47,10 +49,10 @@ impl Encoder for Scalar {
 impl Decoder for Scalar {
     // Quads are decoded one at a time anyway so no need to bundle them up only to un-bundle them.
     // Instead, we just call on_number for each decoded number.
-    type DecodedQuad = ();
+    type DecodedQuad = UnusedQuad;
 
     // This implementation decodes all provided encoded data.
-    fn decode_quads<S: DecodeQuadSink<Self::DecodedQuad>>(
+    fn decode_quads<S: DecodeQuadSink<Self>>(
         control_bytes: &[u8],
         encoded_nums: &[u8],
         control_bytes_to_decode: usize,
@@ -94,8 +96,28 @@ impl Decoder for Scalar {
     }
 }
 
-impl<'a> DecodeQuadSink<()> for SliceDecodeSink<'a> {
-    fn on_quad(&mut self, _: (), _: usize) {
+impl WriteQuadToSlice for Scalar {
+    fn write_quad_to_slice(_quad: Self::DecodedQuad, _slice: &mut [u32]) {
+        // scalar decoding doesn't use quads, so this will never be called
         unreachable!()
     }
+}
+
+/// `Scalar` decoder produces numbers one by one, so there is no quad to unbundle.
+/// Any implementations of `DecodedQuadSink<EmptyQuad>` can safely use `unreachable!()`
+/// or equivalent.
+pub struct UnusedQuad;
+
+/// The Scalar decoder doesn't use quads, but the type checker requires that there be
+/// a `DecodeQuadSink<Scalar>` impl for a sink nonetheless. This macro will generate
+/// an appropriate stub impl for a sink type.
+#[macro_export]
+macro_rules! decode_quad_scalar {
+    ($sink:ty) => {
+        impl stream_vbyte::decode::DecodeQuadSink<stream_vbyte::scalar::Scalar> for $sink {
+            fn on_quad(&mut self, _: stream_vbyte::scalar::UnusedQuad, _: usize) {
+                unreachable!()
+            }
+        }
+    };
 }

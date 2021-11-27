@@ -3,16 +3,20 @@
     feature(portable_simd)
 )]
 
-extern crate rand;
-extern crate stream_vbyte;
-
 use std::cmp;
 #[cfg(feature = "x86_ssse3")]
 use std::{arch::x86_64::__m128i, simd};
 
-use self::rand::Rng;
+use rand::Rng;
 
-use stream_vbyte::*;
+#[cfg(feature = "x86_ssse3")]
+use stream_vbyte::x86::{self, Ssse3};
+use stream_vbyte::{
+    decode::{cursor::DecodeCursor, DecodeQuadSink, DecodeSingleSink, Decoder, WriteQuadToSlice},
+    decode_quad_scalar,
+    encode::encode,
+    scalar::Scalar,
+};
 
 #[path = "../src/random_varint.rs"]
 mod random_varint;
@@ -151,10 +155,7 @@ fn decode_cursor_sink_decode_after_finishing_input_decodes_0_numbers_ssse3() {
     do_decode_cursor_sink_decode_after_finishing_input_decodes_0_numbers::<x86::Ssse3>()
 }
 
-fn do_decode_cursor_slice_every_decode_len<D: Decoder>()
-where
-    for<'a> SliceDecodeSink<'a>: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
-{
+fn do_decode_cursor_slice_every_decode_len<D: Decoder + WriteQuadToSlice>() {
     let mut nums: Vec<u32> = Vec::new();
     let mut encoded = Vec::new();
     let mut decoded = Vec::new();
@@ -222,10 +223,7 @@ where
     }
 }
 
-fn do_decode_cursor_slice_random_decode_len<D: Decoder>()
-where
-    for<'a> SliceDecodeSink<'a>: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
-{
+fn do_decode_cursor_slice_random_decode_len<D: Decoder + WriteQuadToSlice>() {
     let mut nums: Vec<u32> = Vec::new();
     let mut encoded = Vec::new();
     let mut decoded = Vec::new();
@@ -280,10 +278,7 @@ where
     }
 }
 
-fn do_decode_cursor_skip_every_allowable_len_from_start<D: Decoder>()
-where
-    for<'a> SliceDecodeSink<'a>: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
-{
+fn do_decode_cursor_skip_every_allowable_len_from_start<D: Decoder + WriteQuadToSlice>() {
     let mut nums: Vec<u32> = Vec::new();
     let mut encoded = Vec::new();
     let mut decoded = Vec::new();
@@ -332,10 +327,7 @@ where
     }
 }
 
-fn do_decode_cursor_slice_input_only_partial_quad_decodes_all<D: Decoder>()
-where
-    for<'a> SliceDecodeSink<'a>: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
-{
+fn do_decode_cursor_slice_input_only_partial_quad_decodes_all<D: Decoder + WriteQuadToSlice>() {
     let mut nums: Vec<u32> = Vec::new();
     let mut encoded = Vec::new();
     let mut decoded = Vec::new();
@@ -373,10 +365,7 @@ where
     }
 }
 
-fn do_decode_cursor_skip_every_allowable_len_between_decodes<D: Decoder>()
-where
-    for<'a> SliceDecodeSink<'a>: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
-{
+fn do_decode_cursor_skip_every_allowable_len_between_decodes<D: Decoder + WriteQuadToSlice>() {
     let mut nums: Vec<u32> = Vec::new();
     let mut encoded = Vec::new();
     let mut decoded = Vec::new();
@@ -477,11 +466,10 @@ where
     }
 }
 
-fn do_decode_cursor_sink_decode_entire_input_emits_entire_input_including_trailing_partial_quad<
-    D: Decoder,
->()
+fn do_decode_cursor_sink_decode_entire_input_emits_entire_input_including_trailing_partial_quad<D>()
 where
-    TupleSink: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
+    TupleSink: DecodeQuadSink<D>,
+    D: Decoder + WriteQuadToSlice,
 {
     let mut nums: Vec<u32> = Vec::new();
     let mut encoded = Vec::new();
@@ -510,7 +498,7 @@ where
 
 fn do_decode_cursor_sink_decode_partial_input_from_beginning_emits_complete_quads_only<D: Decoder>()
 where
-    TupleSink: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
+    TupleSink: DecodeQuadSink<D>,
 {
     let mut nums: Vec<u32> = Vec::new();
     let mut encoded = Vec::new();
@@ -551,7 +539,7 @@ where
 
 fn do_decode_cursor_sink_decode_in_chunks_emits_complete_quads_until_end<D: Decoder>()
 where
-    TupleSink: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
+    TupleSink: DecodeQuadSink<D>,
 {
     let mut nums: Vec<u32> = Vec::new();
     let mut encoded = Vec::new();
@@ -606,7 +594,7 @@ where
 
 fn do_decode_cursor_sink_decode_in_chunks_smaller_than_first_quad_decodes_0_nums<D: Decoder>()
 where
-    TupleSink: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
+    TupleSink: DecodeQuadSink<D>,
 {
     let mut nums: Vec<u32> = Vec::new();
     let mut encoded = Vec::new();
@@ -629,7 +617,7 @@ fn do_decode_cursor_sink_decode_final_chunk_partially_includes_leftovers_decodes
     D: Decoder,
 >()
 where
-    TupleSink: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
+    TupleSink: DecodeQuadSink<D>,
 {
     let mut nums: Vec<u32> = Vec::new();
     let mut encoded = Vec::new();
@@ -668,7 +656,7 @@ where
 
 fn do_decode_cursor_sink_decode_after_finishing_input_decodes_0_numbers<D: Decoder>()
 where
-    TupleSink: DecodeQuadSink<<D as Decoder>::DecodedQuad>,
+    TupleSink: DecodeQuadSink<D>,
 {
     let mut nums: Vec<u32> = Vec::new();
     let mut encoded = Vec::new();
@@ -729,25 +717,21 @@ impl TupleSink {
     }
 }
 
-impl DecodeQuadSink<()> for TupleSink {
-    fn on_quad(&mut self, _: (), _: usize) {
-        unimplemented!()
+impl DecodeSingleSink for TupleSink {
+    fn on_number(&mut self, num: u32, nums_decoded: usize) {
+        self.tuples.push((nums_decoded, num))
     }
 }
 
+decode_quad_scalar!(TupleSink);
+
 #[cfg(feature = "x86_ssse3")]
-impl DecodeQuadSink<__m128i> for TupleSink {
+impl DecodeQuadSink<Ssse3> for TupleSink {
     fn on_quad(&mut self, quad: __m128i, nums_decoded: usize) {
         let u32s = simd::u32x4::from(quad);
         self.tuples.push((nums_decoded, u32s[0]));
         self.tuples.push((nums_decoded + 1, u32s[1]));
         self.tuples.push((nums_decoded + 2, u32s[2]));
         self.tuples.push((nums_decoded + 3, u32s[3]));
-    }
-}
-
-impl DecodeSingleSink for TupleSink {
-    fn on_number(&mut self, num: u32, nums_decoded: usize) {
-        self.tuples.push((nums_decoded, num))
     }
 }

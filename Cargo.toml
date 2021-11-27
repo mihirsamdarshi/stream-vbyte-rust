@@ -1,6 +1,6 @@
 [package]
 name = "stream-vbyte"
-version = "0.3.2"
+version = "0.4.0"
 description = "Compress and decompress numbers efficiently in the Stream VByte encoding"
 authors = ["Marshall Pierce <marshall@mpierce.org>"]
 homepage = "https://bitbucket.org/marshallpierce/stream-vbyte-rust"
@@ -10,9 +10,6 @@ keywords = ["varint", "stream-vbyte"]
 categories = ["encoding", "compression"]
 license-file = "LICENSE.txt"
 edition = "2018"
-
-[dependencies]
-byteorder = "1.1.0"
 
 [dev-dependencies]
 rand = "0.3.16"

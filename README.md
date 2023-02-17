@@ -1,16 +1,23 @@
-[![](https://img.shields.io/crates/v/stream-vbyte.svg)](https://crates.io/crates/stream-vbyte) [![](https://docs.rs/stream-vbyte/badge.svg)](https://docs.rs/stream-vbyte/) [![Build Status](https://semaphoreci.com/api/v1/marshallpierce/stream-vbyte-rust/branches/master/shields_badge.svg)](https://semaphoreci.com/marshallpierce/stream-vbyte-rust)
+# stream-vbyte-rust
+
+____
+A fork of [marshallpierce/stream-vbyte-rust](https://bitbucket.org/marshallpierce/stream-vbyte-rust/src/master/src/) but
+with aarch64 NEON instruction support
+____
 
 A port of Stream VByte to Rust.
 
 Stream VByte is a variable-length unsigned int encoding designed to make SIMD processing more efficient.
 
-See https://lemire.me/blog/2017/09/27/stream-vbyte-breaking-new-speed-records-for-integer-compression/ and https://arxiv.org/pdf/1709.08990.pdf for details on the format. The reference C implementation is https://github.com/lemire/streamvbyte.
+See https://lemire.me/blog/2017/09/27/stream-vbyte-breaking-new-speed-records-for-integer-compression/
+and https://arxiv.org/pdf/1709.08990.pdf for details on the format. The reference C implementation
+is https://github.com/lemire/streamvbyte.
 
-# Usage
+## Usage
 
 See the [documentation](https://docs.rs/stream-vbyte/).
 
-# Play with the CLI example
+## Play with the CLI example
 
 There's a `cli.rs` example provided that demonstrates encoding and decoding.
 
@@ -27,7 +34,9 @@ ISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZ
 WltcXV5fYGFiY2Q=
 ```
 
-There's a corresponding decode mode that reads the encoded format on stdin and emits the contents, one number per line. Here, we encode some numbers then decode them again: `jot 10 | cargo run --example cli -- enc | cargo run --example cli -- dec -c 10`
+There's a corresponding decode mode that reads the encoded format on stdin and emits the contents, one number per line.
+Here, we encode some numbers then decode them
+again: `jot 10 | cargo run --example cli -- enc | cargo run --example cli -- dec -c 10`
 
 ```
 Encoded 10 numbers
@@ -45,22 +54,22 @@ Decoded 10 numbers
 
 ```
 
-# Maintainers
+## Maintainers
 
 To generate the lookup tables:
 
-```
+```bash
 cargo run --example generate_decode_table > tmp/tables.rs && mv tmp/tables.rs src/tables.rs
 ```
 
 To run the tests (on recent Intel):
 
-```
+```bash
 RUSTFLAGS='-C target-feature=+ssse3,+sse4.1' cargo +nightly test --all-features
 ```
 
 To run the benchmarks:
 
-```
+```bash
 RUSTFLAGS='-C target-feature=+ssse3,+sse4.1' cargo +nightly bench --all-features
 ```

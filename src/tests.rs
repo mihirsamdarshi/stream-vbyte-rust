@@ -1,16 +1,13 @@
 use rand::Rng;
 
-#[path = "random_varint.rs"]
-pub mod random_varint;
-
-use self::random_varint::*;
-
 use crate::{
     cumulative_encoded_len,
     decode::decode_num_scalar,
     encode::{encode, encode_num_scalar},
+    encoded_shape,
+    random_varint::RandomVarintEncodedLengthIter,
     scalar::Scalar,
-    *,
+    EncodedShape,
 };
 
 #[test]
@@ -94,7 +91,8 @@ fn cumulative_encoded_len_accurate_complete_quad() {
         nums.clear();
         encoded.clear();
 
-        // must use complete quads since calculating encoded length is only valid in that case
+        // must use complete quads since calculating encoded length is only valid in
+        // that case
         let count = rng.gen_range(0, 250) * 4;
 
         for i in RandomVarintEncodedLengthIter::new(rand::weak_rng()).take(count) {

@@ -8,7 +8,6 @@ use std::cmp;
 use std::{arch::x86_64::__m128i, simd};
 
 use rand::Rng;
-
 #[cfg(feature = "x86_ssse3")]
 use stream_vbyte::x86::{self, Ssse3};
 use stream_vbyte::{
@@ -383,11 +382,12 @@ fn do_decode_cursor_skip_every_allowable_len_between_decodes<D: Decoder + WriteQ
         encoded.resize(count * 5, 0);
         let encoded_len = encode::<Scalar>(&nums, &mut encoded);
 
-        // The looping here is a little weird because we don't want to try to predict how many nums
-        // will get decoded when we request, say 5 numbers. Will that be 4 because that 5th number
-        // is part of a complete quad, or 5 because there are only 5 numbers so we do the last one
-        // as part of the normal partial trailing quad handling.
-        // Also, we can't roll cursors back (yet) so we have to do each decode-skip-decode triple
+        // The looping here is a little weird because we don't want to try to predict
+        // how many nums will get decoded when we request, say 5 numbers. Will
+        // that be 4 because that 5th number is part of a complete quad, or 5
+        // because there are only 5 numbers so we do the last one as part of the
+        // normal partial trailing quad handling. Also, we can't roll cursors
+        // back (yet) so we have to do each decode-skip-decode triple
         // in one shot rather than re-trying various skips after the first decode.
 
         for initial_decode_len in 0..(count + 1) {

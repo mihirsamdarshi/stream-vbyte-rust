@@ -5,9 +5,8 @@ use std::{
     simd,
 };
 
-use crate::tables;
-
 use super::Encoder;
+use crate::tables;
 
 /// Encoder using SSE4.1 instructions.
 pub struct Sse41;
@@ -18,8 +17,9 @@ const SHIFT: u32 = 1 | 1 << 9 | 1 << 18;
 const SHIFTS: [u32; 4] = [SHIFT, SHIFT, SHIFT, SHIFT];
 // translate 3-bit bytemaps into lane codes. Last 8 will never be used.
 // 0 = 1 byte encoded num, 1 = 2 byte, etc.
-// These are concatenated into the control byte, and also used to sum to find the total length.
-// The ordering of these codes is determined by how the bytemap is calculated; see comments below.
+// These are concatenated into the control byte, and also used to sum to find
+// the total length. The ordering of these codes is determined by how the
+// bytemap is calculated; see comments below.
 #[cfg_attr(rustfmt, rustfmt_skip)]
 const LANECODES: [u8; 16] = [
     0, 3, 2, 3,
@@ -53,9 +53,9 @@ impl Encoder for Sse41 {
         let gather_hi = unsafe { _mm_loadu_si128(GATHER_HI.as_ptr() as *const __m128i) };
         let aggregators = unsafe { _mm_loadu_si128(AGGREGATORS.as_ptr() as *const __m128i) };
 
-        // Encoding writes 16 bytes at a time, but if numbers are encoded with 1 byte each, that
-        // means the last 3 quads could write past what is actually necessary. So, don't process
-        // the last few control bytes.
+        // Encoding writes 16 bytes at a time, but if numbers are encoded with 1 byte
+        // each, that means the last 3 quads could write past what is actually
+        // necessary. So, don't process the last few control bytes.
         let control_byte_limit = control_bytes.len().saturating_sub(3);
 
         for control_byte in &mut control_bytes[0..control_byte_limit].iter_mut() {
@@ -66,8 +66,8 @@ impl Encoder for Sse41 {
             // clamp each byte to 1 if nonzero
             let mins = unsafe { _mm_min_epu8(to_encode, ones) };
 
-            // Apply shifts to clamped bytes. e.g. u32::max_value() would be (little endian):
-            // 00000001 00000001 00000001 00000001
+            // Apply shifts to clamped bytes. e.g. u32::max_value() would be (little
+            // endian): 00000001 00000001 00000001 00000001
             // and after multiplication aka shifting:
             // 00000001 00000011 00000111 00000111
             // 1 << 16 | 1 would be:
@@ -76,14 +76,15 @@ impl Encoder for Sse41 {
             // 00000001 00000010 00000101 00000010
             // At most the bottom 3 bits of each byte will be set by shifting.
             // What we care about is the bottom 3 bits of the high byte in each num.
-            // A 1-byte number (clamped to 0x01000000) will accumulate to 0x00 in the top byte
-            // because there isn't a 3-byte shift to get that set bit into the top byte.
-            // A 2-byte number (clamped to 0x00010000) will accumulate to 0x04 in the top byte
-            // because the set bit would have been shifted 2 bytes + 2 bits higher.
-            // A 3-byte number will have the 0x02 bit set in the top byte, and possibly the 0x04
+            // A 1-byte number (clamped to 0x01000000) will accumulate to 0x00 in the top
+            // byte because there isn't a 3-byte shift to get that set bit into
+            // the top byte. A 2-byte number (clamped to 0x00010000) will
+            // accumulate to 0x04 in the top byte because the set bit would have
+            // been shifted 2 bytes + 2 bits higher. A 3-byte number will have
+            // the 0x02 bit set in the top byte, and possibly the 0x04
             // bit set as well if the 2nd byte was non-zero.
-            // A 4-byte number will have the 0x01 bit set in the top byte, and possibly 0x02 and
-            // 0x04.
+            // A 4-byte number will have the 0x01 bit set in the top byte, and possibly 0x02
+            // and 0x04.
             // In summary, byte lengths -> high byte:
             // 1-byte -> 0x00
             // 2-byte -> 0x04
@@ -91,12 +92,13 @@ impl Encoder for Sse41 {
             // 4-byte -> 0x01, 0x05, 0x03, 0x07
             let bytemaps = unsafe { _mm_mullo_epi32(mins, shifts) };
 
-            // Map high bytes to the corresponding lane codes. (Other bytes are mapped as well
-            // but are not used.)
+            // Map high bytes to the corresponding lane codes. (Other bytes are mapped as
+            // well but are not used.)
             let shuffled_lanecodes = unsafe { _mm_shuffle_epi8(lanecodes, bytemaps) };
 
             // Assemble 2 copies of the high byte from each of the 4 numbers.
-            // The first copy will be used to calculate the control byte, the second the length.
+            // The first copy will be used to calculate the control byte, the second the
+            // length.
             let hi_bytes = unsafe { _mm_shuffle_epi8(shuffled_lanecodes, gather_hi) };
 
             // use CONCAT to shift the lane code bits from bytes 0-3 into 1 byte (byte 3)
@@ -160,9 +162,10 @@ mod tests {
                 bytes_written
             );
 
-            // the last control byte written may not have populated all 16 output bytes with encoded
-            // nums, depending on the length required. Any unused trailing bytes will have had 0
-            // written, but nothing beyond that 16 should be touched.
+            // the last control byte written may not have populated all 16 output bytes with
+            // encoded nums, depending on the length required. Any unused
+            // trailing bytes will have had 0 written, but nothing beyond that
+            // 16 should be touched.
 
             let length_before_final_control_byte =
                 cumulative_encoded_len(&encoded[0..control_bytes_written.saturating_sub(1)]);

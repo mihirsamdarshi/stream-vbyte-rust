@@ -1,10 +1,10 @@
-use std::cmp;
-
-use std::arch::aarch64::{uint8x16_t, vld1q_u8, vqtbl1q_u8, vst1q_u8};
-
-use crate::tables;
+use std::{
+    arch::aarch64::{uint8x16_t, vld1q_u8, vqtbl1q_u8, vst1q_u8},
+    cmp,
+};
 
 use super::{DecodeQuadSink, Decoder, WriteQuadToSlice};
+use crate::tables;
 
 /// Decoder using SSSE3 instructions.
 pub struct Neon;
@@ -22,23 +22,24 @@ impl Decoder for Neon {
         let mut bytes_read: usize = 0;
         let mut nums_decoded: usize = nums_already_decoded;
 
-        // Decoding reads 16 bytes at a time from input, so we won't be able to read the last few
-        // control byte's worth because they may be encoded at 1 byte per number, so we need 3
-        // additional control bytes' worth of numbers to provide the extra 12 bytes.
-        // However, if control_bytes_to_decode is short enough, we can decode all the requested
-        // numbers because we'll have un-processed input to ensure we can read 16 bytes.
+        // Decoding reads 16 bytes at a time from input, so we won't be able to read the
+        // last few control byte's worth because they may be encoded at 1 byte
+        // per number, so we need 3 additional control bytes' worth of numbers
+        // to provide the extra 12 bytes. However, if control_bytes_to_decode is
+        // short enough, we can decode all the requested numbers because we'll
+        // have un-processed input to ensure we can read 16 bytes.
         let control_byte_limit = cmp::min(
             control_bytes_to_decode,
             control_bytes.len().saturating_sub(3),
         );
 
-        // need to ensure that we can copy 16 encoded bytes, so last few quads will be handled
-        // by a slower loop
+        // need to ensure that we can copy 16 encoded bytes, so last few quads will be
+        // handled by a slower loop
         for &control_byte in control_bytes[0..control_byte_limit].iter() {
             let length = tables::DECODE_LENGTH_PER_QUAD_TABLE[control_byte as usize];
             let mask_bytes = tables::DECODE_SHUFFLE_TABLE[control_byte as usize];
-            // we'll read 16 bytes from this always, so using explicit slice size to make sure it's
-            // ok to read unsafe
+            // we'll read 16 bytes from this always, so using explicit slice size to make
+            // sure it's ok to read unsafe
             let next_4 = &encoded_nums[bytes_read..(bytes_read + 16)];
 
             let mask;
@@ -71,9 +72,8 @@ impl WriteQuadToSlice for Neon {
 
 #[cfg(test)]
 mod tests {
-    use crate::{cumulative_encoded_len, decode::SliceDecodeSink, encode::encode, scalar::Scalar};
-
     use super::*;
+    use crate::{cumulative_encoded_len, decode::SliceDecodeSink, encode::encode, scalar::Scalar};
 
     #[test]
     fn reads_all_requested_control_bytes_when_12_extra_input_bytes() {
@@ -113,8 +113,8 @@ mod tests {
             decoded.clear();
             decoded.resize(nums.len(), 54321);
 
-            // requesting more than 13 gets capped to 13 because there may not be enough encoded
-            // nums to read 16 bytes at a time
+            // requesting more than 13 gets capped to 13 because there may not be enough
+            // encoded nums to read 16 bytes at a time
             let (nums_decoded, bytes_read) = Neon::decode_quads(
                 control_bytes,
                 encoded_nums,

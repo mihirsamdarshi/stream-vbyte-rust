@@ -1,50 +1,58 @@
-//! Encode `u32`s to bytes and decode them back again with the Stream VByte format.
+//! Encode `u32`s to bytes and decode them back again with the Stream VByte
+//! format.
 //!
-//! To encode all your numbers to a `&[u8]`, or decode all your bytes to a `&[u32]`, see `encode()`
-//! and `decode()` respectively. For more sophisticated decoding functionality, see `DecodeCursor`.
+//! To encode all your numbers to a `&[u8]`, or decode all your bytes to a
+//! `&[u32]`, see `encode()` and `decode()` respectively. For more sophisticated
+//! decoding functionality, see `DecodeCursor`.
 //!
-//! There are two traits, `Encoder` and `Decoder`, that allow you to choose what logic to use in the
-//! inner hot loops.
+//! There are two traits, `Encoder` and `Decoder`, that allow you to choose what
+//! logic to use in the inner hot loops.
 //!
-//! A terminology note - Stream VByte groups encoded numbers into clusters of four, which are
-//! referred to as "quads" in this project.
+//! A terminology note - Stream VByte groups encoded numbers into clusters of
+//! four, which are referred to as "quads" in this project.
 //!
 //! # The simple, pretty fast way
 //!
-//! Use `Scalar` for your `Encoder` and `Decoder`. It will work on all hardware, and is fast enough
-//! that most people will probably never notice the time taken to encode/decode.
+//! Use `Scalar` for your `Encoder` and `Decoder`. It will work on all hardware,
+//! and is fast enough that most people will probably never notice the time
+//! taken to encode/decode.
 //!
 //! # The more complex, really fast way
 //!
-//! If you can use nightly Rust (currently needed for SIMD) and you know which hardware you'll be
-//! running on, or you can add runtime detection of CPU features, you can choose to use an
-//! implementation that takes advantage of your hardware. Something like
-//! [raw-cpuid](https://crates.io/crates/raw-cpuid) or [auxv](https://crates.io/crates/auxv) will
+//! If you can use nightly Rust (currently needed for SIMD) and you know which
+//! hardware you'll be running on, or you can add runtime detection of CPU
+//! features, you can choose to use an implementation that takes advantage of
+//! your hardware. Something like [raw-cpuid](https://crates.io/crates/raw-cpuid) or [auxv](https://crates.io/crates/auxv) will
 //! probably be useful for runtime CPU feature detection.
 //!
-//! Performance numbers are calculated on an E5-1650v3 on encoding/decoding 1 million random numbers
-//! at a time. You can run the benchmarks yourself to see how your hardware does.
+//! Performance numbers are calculated on an E5-1650v3 on encoding/decoding 1
+//! million random numbers at a time. You can run the benchmarks yourself to see
+//! how your hardware does.
 //!
-//! Both `feature`s and `target_feature`s are used because `target_feature` is not in stable Rust
-//! yet and this library should remain usable by stable Rust, so non-stable-friendly things are
-//! hidden behind `feature`s.
+//! Both `feature`s and `target_feature`s are used because `target_feature` is
+//! not in stable Rust yet and this library should remain usable by stable Rust,
+//! so non-stable-friendly things are hidden behind `feature`s.
 //!
 //! ## Encoders
 //!
-//! | Type           | Performance    | Hardware                                 | `target_feature` | `feature`   |
-//! | -------------- | ---------------| ---------------------------------------- | ---------------- | ----------- |
-//! | `Scalar`       | ≈140 million/s | All                                      | none             | none        |
-//! | `x86::Sse41`   | ≈1 billion/s   | x86 with SSE4.1 (Penryn and above, 2008) | `sse4.1`         | `x86_sse41` |
+//! | Type           | Performance    | Hardware
+//! | `target_feature` | `feature`   | | -------------- | ---------------|
+//! ---------------------------------------- | ---------------- | ----------- |
+//! | `Scalar`       | ≈140 million/s | All
+//! | none             | none        | | `x86::Sse41`   | ≈1 billion/s   | x86
+//! with SSE4.1 (Penryn and above, 2008) | `sse4.1`         | `x86_sse41` |
 //!
 //! ## Decoders
 //!
-//! | Type           | Performance    | Hardware                                   | `target_feature` | `feature`   |
-//! | -------------- | ---------------| ------------------------------------------ | ---------------- | ----------- |
-//! | `Scalar`       | ≈140 million/s | All                                        | none             | none        |
-//! | `x86::Ssse3`   | ≈2.7 billion/s | x86 with SSSE3 (Woodcrest and above, 2006) | `ssse3`          | `x86_ssse3` |
+//! | Type           | Performance    | Hardware
+//! | `target_feature` | `feature`   | | -------------- | ---------------|
+//! ------------------------------------------ | ---------------- | -----------
+//! | | `Scalar`       | ≈140 million/s | All
+//! | none             | none        | | `x86::Ssse3`   | ≈2.7 billion/s | x86
+//! with SSSE3 (Woodcrest and above, 2006) | `ssse3`          | `x86_ssse3` |
 //!
-//! If you have a modern x86 and you want to use the all SIMD accelerated versions, you would use
-//! `target_feature` in a compiler invocation like this:
+//! If you have a modern x86 and you want to use the all SIMD accelerated
+//! versions, you would use `target_feature` in a compiler invocation like this:
 //!
 //! ```sh
 //! RUSTFLAGS='-C target-feature=+ssse3,+sse4.1' cargo ...
@@ -93,18 +101,18 @@
 //!
 //! # Panics
 //!
-//! If you use undersized slices (e.g. encoding 10 numbers into 5 bytes), you will get the normal
-//! slice bounds check panics.
+//! If you use undersized slices (e.g. encoding 10 numbers into 5 bytes), you
+//! will get the normal slice bounds check panics.
 //!
 //! # Safety
 //!
-//! SIMD code uses unsafe internally because many of the SIMD intrinsics are unsafe. However, SIMD
-//! intrinsics are used only on appropriately sized slices to essentially manually apply
-//! slice index checking before use.
+//! SIMD code uses unsafe internally because many of the SIMD intrinsics are
+//! unsafe. However, SIMD intrinsics are used only on appropriately sized slices
+//! to essentially manually apply slice index checking before use.
 //!
-//! Since this is human-maintained code, it could do the bounds checking incorrectly, of course. To
-//! mitigate those risks, there are various forms of randomized testing in the test suite to shake
-//! out any lurking bugs.
+//! Since this is human-maintained code, it could do the bounds checking
+//! incorrectly, of course. To mitigate those risks, there are various forms of
+//! randomized testing in the test suite to shake out any lurking bugs.
 //!
 //! The `Scalar` codec does not use unsafe.
 
@@ -137,13 +145,16 @@ fn encoded_shape(count: usize) -> EncodedShape {
 }
 
 fn cumulative_encoded_len(control_bytes: &[u8]) -> usize {
-    // sum could only overflow with an invalid encoding because the sum can be no larger than
-    // the complete length of the encoded data, which fits in a usize
+    // sum could only overflow with an invalid encoding because the sum can be no
+    // larger than the complete length of the encoded data, which fits in a
+    // usize
     control_bytes
         .iter()
         .map(|&b| tables::DECODE_LENGTH_PER_QUAD_TABLE[b as usize] as usize)
         .sum()
 }
 
+#[cfg(test)]
+pub mod random_varint;
 #[cfg(test)]
 mod tests;

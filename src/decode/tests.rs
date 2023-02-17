@@ -1,14 +1,14 @@
 use rand::Rng;
 
-use crate::{cumulative_encoded_len, encode::encode, scalar::Scalar};
-
-use super::*;
 #[cfg(feature = "x86_ssse3")]
 use crate::x86;
-
-#[path = "../random_varint.rs"]
-mod random_varint;
-use self::random_varint::*;
+use crate::{
+    cumulative_encoded_len,
+    decode::{decode_num_scalar, Decoder, SliceDecodeSink, WriteQuadToSlice},
+    encode::encode,
+    random_varint::RandomVarintEncodedLengthIter,
+    scalar::Scalar,
+};
 
 #[test]
 fn decode_num_zero() {
@@ -55,15 +55,16 @@ fn decode_num_1_byte() {
 
 #[test]
 fn decoder_honors_nums_to_decode_scalar() {
-    // scalar should be able to decode all control bytes regardless of remaining input
+    // scalar should be able to decode all control bytes regardless of remaining
+    // input
     decoder_honors_nums_to_decode::<Scalar>(0);
 }
 
 #[cfg(feature = "x86_ssse3")]
 #[test]
 fn decoder_honors_nums_to_decode_ssse3() {
-    // Sse3 reads 16 bytes at a time, so it cannot handle the last 3 control bytes in case their
-    // encoded nums are <16 bytes
+    // Sse3 reads 16 bytes at a time, so it cannot handle the last 3 control bytes
+    // in case their encoded nums are <16 bytes
     decoder_honors_nums_to_decode::<x86::Ssse3>(3);
 }
 

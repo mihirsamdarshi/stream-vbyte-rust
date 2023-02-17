@@ -8,30 +8,31 @@ use crate::{
 
 /// Offers more flexible decoding than the top-level `decode()`.
 ///
-/// You can skip numbers you don't need with `skip()`, and decode the parts of your input you need
-/// with `decode_slice()`.
+/// You can skip numbers you don't need with `skip()`, and decode the parts of
+/// your input you need with `decode_slice()`.
 ///
-/// If you need maximum flexibility, you can use `decode_sink()` with a custom `DecodeQuadSink`
-/// implementation to receive numbers as they are decoded rather than storing them into a slice
-/// and then inspecting them.
+/// If you need maximum flexibility, you can use `decode_sink()` with a custom
+/// `DecodeQuadSink` implementation to receive numbers as they are decoded
+/// rather than storing them into a slice and then inspecting them.
 ///
 /// # Decode sinks
 ///
-/// If you don't want to write decoded numbers into a slice and inspect them later, you can use a
-/// custom sink. This is probably most useful when you want to minimize memory usage. For instance,
-/// you could `mmap` a file and scan through its contents with a custom sink without ever allocating
-/// on the heap.
+/// If you don't want to write decoded numbers into a slice and inspect them
+/// later, you can use a custom sink. This is probably most useful when you want
+/// to minimize memory usage. For instance, you could `mmap` a file and scan
+/// through its contents with a custom sink without ever allocating on the heap.
 ///
 /// There are two traits to represent a sink: one for complete quads
-/// (`DecodeQuadSink`), and one for any trailing leftover numbers that may not fill a quad
-/// (`DecodeSingleSink`). You will need to implement both with the appropriate
-/// `Decoder::DecodedQuad` type for the `Decoder` you are using. You can look at the implementations
-/// of `TupleSink` in the tests for examples.
+/// (`DecodeQuadSink`), and one for any trailing leftover numbers that may not
+/// fill a quad (`DecodeSingleSink`). You will need to implement both with the
+/// appropriate `Decoder::DecodedQuad` type for the `Decoder` you are using. You
+/// can look at the implementations of `TupleSink` in the tests for examples.
 ///
 /// # Examples
 ///
-/// Here's a sink that calculates the maximum number in the input without writing the decoded input
-/// anywhere. (Unfortunately, due to a Rust bug I cannot include a SIMD example in a doc test.)
+/// Here's a sink that calculates the maximum number in the input without
+/// writing the decoded input anywhere. (Unfortunately, due to a Rust bug I
+/// cannot include a SIMD example in a doc test.)
 ///
 /// ```
 /// use std::cmp;
@@ -86,9 +87,7 @@ use crate::{
 ///
 ///     assert_eq!(34, sink.max);
 /// }
-///
 /// ```
-///
 #[derive(Debug)]
 pub struct DecodeCursor<'a> {
     control_bytes: &'a [u8],
@@ -116,9 +115,10 @@ impl<'a> DecodeCursor<'a> {
         }
     }
 
-    /// Skip `to_skip` numbers. `to_skip` must be a multiple of 4, and must not be greater than the
-    /// count of remaining numbers that are in complete blocks of 4. In other words, if you have
-    /// 7 numbers remaining (a block of 4 and a partial block of 3), the only count you can skip is
+    /// Skip `to_skip` numbers. `to_skip` must be a multiple of 4, and must not
+    /// be greater than the count of remaining numbers that are in complete
+    /// blocks of 4. In other words, if you have 7 numbers remaining (a
+    /// block of 4 and a partial block of 3), the only count you can skip is
     /// 4.
     ///
     /// Skipping numbers is several times faster than decoding them.
@@ -142,14 +142,14 @@ impl<'a> DecodeCursor<'a> {
 
     /// Decode into the `output` buffer.
     ///
-    /// If there is at least one complete quad of input remaining to decode, the buffer must be
-    /// at least of size 4.
+    /// If there is at least one complete quad of input remaining to decode, the
+    /// buffer must be at least of size 4.
     ///
-    /// If there is only a final partial quad of input, the buffer must be at least as big as the
-    /// remaining input.
+    /// If there is only a final partial quad of input, the buffer must be at
+    /// least as big as the remaining input.
     ///
-    /// Returns the number of numbers decoded by this invocation, which may be less than the size
-    /// of the buffer.
+    /// Returns the number of numbers decoded by this invocation, which may be
+    /// less than the size of the buffer.
     pub fn decode_slice<D: Decoder + WriteQuadToSlice>(&mut self, output: &mut [u32]) -> usize {
         let output_len = output.len();
 
@@ -158,13 +158,15 @@ impl<'a> DecodeCursor<'a> {
         self.decode_sink::<D, SliceDecodeSink>(&mut sink, output_len)
     }
 
-    /// Decode at most `max_numbers_to_decode` numbers from the input and hand them to `sink`.
+    /// Decode at most `max_numbers_to_decode` numbers from the input and hand
+    /// them to `sink`.
     ///
-    /// Decoding is done one quad at a time, except for the last quad, which may have fewer than
-    /// four corresponding encoded numbers. Consequently, the number of numbers decoded will be a
-    /// multiple of 4, unless `max_numbers_to_decode` includes the end of the encoded input, in
-    /// which case the number of numbers will be all remaining numbers in the input regardless of
-    /// whether that's a multiple of 4 or not.
+    /// Decoding is done one quad at a time, except for the last quad, which may
+    /// have fewer than four corresponding encoded numbers. Consequently,
+    /// the number of numbers decoded will be a multiple of 4, unless
+    /// `max_numbers_to_decode` includes the end of the encoded input, in
+    /// which case the number of numbers will be all remaining numbers in the
+    /// input regardless of whether that's a multiple of 4 or not.
     ///
     /// With each invocation of `decode()`, the `nums_decoded` parameter used in
     /// `DecodeQuadSink.on_quad()` will start counting up from 0 again.
@@ -199,8 +201,8 @@ impl<'a> DecodeCursor<'a> {
         }
 
         {
-            // handle any remaining full quads if the provided Decoder did not consume all the
-            // control bytes
+            // handle any remaining full quads if the provided Decoder did not consume all
+            // the control bytes
             let (more_nums_decoded, more_bytes_read) = Scalar::decode_quads(
                 &self.control_bytes
                     [self.control_bytes_read..self.encoded_shape.complete_control_bytes_len],
@@ -216,7 +218,8 @@ impl<'a> DecodeCursor<'a> {
             self.nums_decoded += more_nums_decoded;
         }
 
-        // decode incomplete quad if we're at the end and we were asked to decode all leftovers
+        // decode incomplete quad if we're at the end and we were asked to decode all
+        // leftovers
         if max_numbers_to_decode - complete_quad_nums_decoded_this_invocation
             >= self.encoded_shape.leftover_numbers
             && self.control_bytes_read == self.encoded_shape.complete_control_bytes_len
@@ -241,8 +244,8 @@ impl<'a> DecodeCursor<'a> {
         self.nums_decoded - start_nums_decoded
     }
 
-    /// Returns the total length of input scanned so far: the complete block of control bytes, plus
-    /// any encoded numbers decoded.
+    /// Returns the total length of input scanned so far: the complete block of
+    /// control bytes, plus any encoded numbers decoded.
     pub fn input_consumed(&self) -> usize {
         self.encoded_shape.control_bytes_len + self.encoded_bytes_read
     }

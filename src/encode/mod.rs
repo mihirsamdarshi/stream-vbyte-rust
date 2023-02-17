@@ -1,7 +1,6 @@
 use std::cmp;
 
-use crate::encoded_shape;
-use crate::scalar::Scalar;
+use crate::{encoded_shape, scalar::Scalar};
 
 #[cfg(feature = "x86_sse41")]
 pub mod sse41;
@@ -10,25 +9,30 @@ pub mod sse41;
 pub trait Encoder {
     /// Encode complete quads of input numbers.
     ///
-    /// `control_bytes` will be exactly as long as the number of complete 4-number quads in `input`.
+    /// `control_bytes` will be exactly as long as the number of complete
+    /// 4-number quads in `input`.
     ///
-    /// Control bytes are written to `control_bytes` and encoded numbers to `output`.
+    /// Control bytes are written to `control_bytes` and encoded numbers to
+    /// `output`.
     ///
-    /// Implementations may choose to encode fewer than the full provided input, but any writes done
-    /// must be for full quads.
+    /// Implementations may choose to encode fewer than the full provided input,
+    /// but any writes done must be for full quads.
     ///
-    /// Implementations must not write to `output` outside of the area that will be populated by
-    /// encoded numbers when all control bytes are processed..
+    /// Implementations must not write to `output` outside of the area that will
+    /// be populated by encoded numbers when all control bytes are
+    /// processed..
     ///
-    /// Returns the number of numbers encoded and the number of bytes written to `output`.
+    /// Returns the number of numbers encoded and the number of bytes written to
+    /// `output`.
     fn encode_quads(input: &[u32], control_bytes: &mut [u8], output: &mut [u8]) -> (usize, usize);
 }
 
 /// Encode the `input` slice into the `output` slice.
 ///
-/// If you don't have specific knowledge of the input that would let you determine the encoded
-/// length ahead of time, make `output` 5x as long as `input`. The worst-case encoded length is 4
-/// bytes per `u32` plus another byte for every 4 `u32`s, including any trailing partial 4-some.
+/// If you don't have specific knowledge of the input that would let you
+/// determine the encoded length ahead of time, make `output` 5x as long as
+/// `input`. The worst-case encoded length is 4 bytes per `u32` plus another
+/// byte for every 4 `u32`s, including any trailing partial 4-some.
 ///
 /// Returns the number of bytes written to the `output` slice.
 pub fn encode<E: Encoder>(input: &[u32], output: &mut [u8]) -> usize {

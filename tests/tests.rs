@@ -1,17 +1,13 @@
-use std::cmp;
-use std::fs::File;
-use std::io::Read;
+use std::{cmp, fs::File, io::Read};
 
 use rand::Rng;
-
+#[cfg(feature = "x86_sse41")]
+use stream_vbyte::x86;
 use stream_vbyte::{
     decode::{decode, Decoder, WriteQuadToSlice},
     encode::{encode, Encoder},
     scalar::Scalar,
 };
-
-#[cfg(feature = "x86_sse41")]
-use stream_vbyte::x86;
 
 #[path = "../src/random_varint.rs"]
 mod random_varint;
@@ -156,8 +152,8 @@ fn do_all_same_single_byte<E: Encoder, D: Decoder + WriteQuadToSlice>() {
             let control_byte_len = (count + 3) / 4;
             let encoded_len = count + control_byte_len;
 
-            // make the vecs a little oversized so we can tell if something clobbers the bytes
-            // following what should be written to
+            // make the vecs a little oversized so we can tell if something clobbers the
+            // bytes following what should be written to
             let extra_slots = 1000;
             let decoded_len = cmp::max(4, count);
 

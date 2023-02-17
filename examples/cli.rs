@@ -1,5 +1,6 @@
-use clap::{App, Arg, SubCommand};
 use std::io::{BufRead, Read, Write};
+
+use clap::{App, Arg, SubCommand};
 use stream_vbyte::{decode::decode, encode::encode, scalar::Scalar};
 
 fn main() {

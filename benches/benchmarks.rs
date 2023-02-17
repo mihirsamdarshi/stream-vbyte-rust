@@ -5,13 +5,12 @@ use std::arch::x86_64::__m128i;
 
 extern crate test;
 
-use test::Bencher;
-
-use rand::distributions::{IndependentSample, Range};
-use rand::Rng;
-
 use std::iter;
 
+use rand::{
+    distributions::{IndependentSample, Range},
+    Rng,
+};
 #[cfg(feature = "x86_ssse3")]
 use stream_vbyte::x86::{self, Ssse3};
 use stream_vbyte::{
@@ -22,6 +21,7 @@ use stream_vbyte::{
     encode::{encode, Encoder},
     scalar::Scalar,
 };
+use test::Bencher;
 
 #[bench]
 fn encode_scalar_rand_1k(b: &mut Bencher) {
@@ -235,8 +235,8 @@ fn do_encode_bench<I: Iterator<Item = u32>, E: Encoder>(b: &mut Bencher, iter: I
     });
 }
 
-// take a decoder param to save us some typing -- type inference won't work if you only specify some
-// of the generic types
+// take a decoder param to save us some typing -- type inference won't work if
+// you only specify some of the generic types
 fn do_decode_bench<I, D>(b: &mut Bencher, iter: I, _decoder: D)
 where
     I: Iterator<Item = u32>,

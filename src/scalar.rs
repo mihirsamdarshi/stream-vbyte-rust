@@ -6,8 +6,8 @@ use crate::{
     tables,
 };
 
-/// Encoder/Decoder that works on every platform, at the cost of speed compared to the SIMD
-/// accelerated versions.
+/// Encoder/Decoder that works on every platform, at the cost of speed compared
+/// to the SIMD accelerated versions.
 pub struct Scalar;
 
 impl Encoder for Scalar {
@@ -34,7 +34,8 @@ impl Encoder for Scalar {
                 &mut encoded_nums[bytes_written + len0 + len1 + len2..],
             );
 
-            // this is a few percent faster in my testing than using control_bytes.iter_mut()
+            // this is a few percent faster in my testing than using
+            // control_bytes.iter_mut()
             control_bytes[quads_encoded] =
                 ((len0 - 1) | (len1 - 1) << 2 | (len2 - 1) << 4 | (len3 - 1) << 6) as u8;
 
@@ -47,8 +48,8 @@ impl Encoder for Scalar {
 }
 
 impl Decoder for Scalar {
-    // Quads are decoded one at a time anyway so no need to bundle them up only to un-bundle them.
-    // Instead, we just call on_number for each decoded number.
+    // Quads are decoded one at a time anyway so no need to bundle them up only to
+    // un-bundle them. Instead, we just call on_number for each decoded number.
     type DecodedQuad = UnusedQuad;
 
     // This implementation decodes all provided encoded data.
@@ -103,14 +104,14 @@ impl WriteQuadToSlice for Scalar {
     }
 }
 
-/// `Scalar` decoder produces numbers one by one, so there is no quad to unbundle.
-/// Any implementations of `DecodedQuadSink<EmptyQuad>` can safely use `unreachable!()`
-/// or equivalent.
+/// `Scalar` decoder produces numbers one by one, so there is no quad to
+/// unbundle. Any implementations of `DecodedQuadSink<EmptyQuad>` can safely use
+/// `unreachable!()` or equivalent.
 pub struct UnusedQuad;
 
-/// The Scalar decoder doesn't use quads, but the type checker requires that there be
-/// a `DecodeQuadSink<Scalar>` impl for a sink nonetheless. This macro will generate
-/// an appropriate stub impl for a sink type.
+/// The Scalar decoder doesn't use quads, but the type checker requires that
+/// there be a `DecodeQuadSink<Scalar>` impl for a sink nonetheless. This macro
+/// will generate an appropriate stub impl for a sink type.
 #[macro_export]
 macro_rules! decode_quad_scalar {
     ($sink:ty) => {

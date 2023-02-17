@@ -1,10 +1,13 @@
-use rand::distributions::{IndependentSample, Range};
-use rand::Rng;
+use rand::{
+    distributions::{IndependentSample, Range},
+    Rng,
+};
 
-// Evenly distributed random numbers end up biased heavily towards longer encoded byte lengths:
-// there are a lot more large numbers than there are small (duh), but for exercising serialization
-// code paths, we'd like many at all byte lengths. This is also arguably more representative of
-// real data. This should emit values whose varint lengths are uniformly distributed across the
+// Evenly distributed random numbers end up biased heavily towards longer
+// encoded byte lengths: there are a lot more large numbers than there are small
+// (duh), but for exercising serialization code paths, we'd like many at all
+// byte lengths. This is also arguably more representative of real data. This
+// should emit values whose varint lengths are uniformly distributed across the
 // whole length range.
 pub struct RandomVarintEncodedLengthIter<R: Rng> {
     ranges: [Range<u32>; 4],

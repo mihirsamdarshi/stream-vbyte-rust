@@ -1,0 +1,62 @@
+name: test
+
+env:
+  CARGO_TERM_COLOR: always
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    # test rust on aarch64 and x86_64
+    strategy:
+      matrix:
+        arch: [ aarch64, x86_64 ]
+
+    env:
+      RUSTFLAGS: ${{ '-C target-feature=+ssse3,+sse4.1' if matrix.arch == 'x86_64' else '-C target-feature=+ssse3,+sse4.1' }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          targets: ${{ matrix.arch }}-unknown-linux-gnu
+
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Set features by arch
+        run: |
+          if [ "${{ matrix.arch }}" = "aarch64" ]; then
+            echo "CARGO_FEATURES=aarch64_neon" >> $GITHUB_ENV
+          fi
+          if [ "${{ matrix.arch }}" = "x86_64" ]; then
+            echo "CARGO_FEATURES=x86_sse3,x86_sse41" >> $GITHUB_ENV
+          fi
+
+      - name: Build test suite
+        run: cargo test --no-run --features=${{ env.CARGO_FEATURES }}
+
+      - name: Run tests
+        run: RUST_BACKTRACE=1 cargo test --features=${{ env.CARGO_FEATURES }}
+
+      # make sure benchmarks compile
+      - name: Build benchmarks
+        run: cargo bench --no-run --features=${{ env.CARGO_FEATURES }}
+
+      - name: Run benchmarks
+        run: cargo bench --features=${{ env.CARGO_FEATURES }}
+
+
+

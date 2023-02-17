@@ -1,7 +1,4 @@
-use std::{
-    arch::aarch64::{uint8x16_t, vld1q_u8, vqtbl1q_u8, vst1q_u8},
-    cmp,
-};
+use std::arch::aarch64::{uint8x16_t, vld1q_u8, vqtbl1q_u8, vst1q_u8};
 
 use super::{DecodeQuadSink, Decoder, WriteQuadToSlice};
 use crate::tables;
@@ -28,7 +25,7 @@ impl Decoder for NeonDecoder {
         // to provide the extra 12 bytes. However, if control_bytes_to_decode is
         // short enough, we can decode all the requested numbers because we'll
         // have un-processed input to ensure we can read 16 bytes.
-        let control_byte_limit = cmp::min(
+        let control_byte_limit = std::cmp::min(
             control_bytes_to_decode,
             control_bytes.len().saturating_sub(3),
         );
@@ -46,8 +43,6 @@ impl Decoder for NeonDecoder {
             let data;
 
             unsafe {
-                // TODO load mask unaligned once https://github.com/rust-lang/rust/issues/33626
-                // hits stable
                 mask = vld1q_u8(mask_bytes.as_ptr() as *const u8);
                 data = vld1q_u8(next_4.as_ptr() as *const u8);
             }

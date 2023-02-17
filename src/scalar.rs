@@ -1,5 +1,3 @@
-use std::cmp;
-
 use crate::{
     decode::{decode_num_scalar, DecodeQuadSink, Decoder, WriteQuadToSlice},
     encode::{encode_num_scalar, Encoder},
@@ -20,7 +18,7 @@ impl Encoder for Scalar {
         let mut bytes_written = 0;
         let mut nums_encoded = 0;
 
-        for quads_encoded in 0..control_bytes.len() {
+        for quads_encoded in control_bytes {
             let num0 = input[nums_encoded];
             let num1 = input[nums_encoded + 1];
             let num2 = input[nums_encoded + 2];
@@ -36,7 +34,7 @@ impl Encoder for Scalar {
 
             // this is a few percent faster in my testing than using
             // control_bytes.iter_mut()
-            control_bytes[quads_encoded] =
+            *quads_encoded =
                 ((len0 - 1) | (len1 - 1) << 2 | (len2 - 1) << 4 | (len3 - 1) << 6) as u8;
 
             bytes_written += len0 + len1 + len2 + len3;
@@ -62,7 +60,7 @@ impl Decoder for Scalar {
     ) -> (usize, usize) {
         let mut bytes_read: usize = 0;
         let mut nums_decoded: usize = nums_already_decoded;
-        let control_byte_limit = cmp::min(control_bytes.len(), control_bytes_to_decode);
+        let control_byte_limit = std::cmp::min(control_bytes.len(), control_bytes_to_decode);
 
         for &control_byte in control_bytes[0..control_byte_limit].iter() {
             let (len0, len1, len2, len3) =
@@ -115,7 +113,7 @@ pub struct UnusedQuad;
 #[macro_export]
 macro_rules! decode_quad_scalar {
     ($sink:ty) => {
-        impl stream_vbyte::decode::DecodeQuadSink<stream_vbyte::scalar::Scalar> for $sink {
+        impl $crate::decode::DecodeQuadSink<stream_vbyte::scalar::Scalar> for $sink {
             fn on_quad(&mut self, _: stream_vbyte::scalar::UnusedQuad, _: usize) {
                 unreachable!()
             }

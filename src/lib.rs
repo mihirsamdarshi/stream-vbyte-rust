@@ -1,3 +1,4 @@
+#![rustfmt::skip]
 //! Encode `u32`s to bytes and decode them back again with the Stream VByte
 //! format.
 //!
@@ -35,21 +36,17 @@
 //!
 //! ## Encoders
 //!
-//! | Type           | Performance    | Hardware
-//! | `target_feature` | `feature`   | | -------------- | ---------------|
-//! ---------------------------------------- | ---------------- | ----------- |
-//! | `Scalar`       | ≈140 million/s | All
-//! | none             | none        | | `x86::Sse41`   | ≈1 billion/s   | x86
-//! with SSE4.1 (Penryn and above, 2008) | `sse4.1`         | `x86_sse41` |
+//! | Type         | Performance    | Hardware                                 | `target_feature` | `feature`   |
+//! | ------------ | -------------- | ---------------------------------------- | ---------------- | ----------- |
+//! | `Scalar`     | ≈140 million/s | All                                      | none             | none        |
+//! | `x86::Sse41` | ≈1 billion/s   | x86 with SSE4.1 (Penryn and above, 2008) | `sse4.1`         | `x86_sse41` |
 //!
 //! ## Decoders
 //!
-//! | Type           | Performance    | Hardware
-//! | `target_feature` | `feature`   | | -------------- | ---------------|
-//! ------------------------------------------ | ---------------- | -----------
-//! | | `Scalar`       | ≈140 million/s | All
-//! | none             | none        | | `x86::Ssse3`   | ≈2.7 billion/s | x86
-//! with SSSE3 (Woodcrest and above, 2006) | `ssse3`          | `x86_ssse3` |
+//! | Type         | Performance    | Hardware                                   | `target_feature` | `feature`   |
+//! | ------------ | -------------- | ------------------------------------------ | ---------------- | ----------- |
+//! | `Scalar`     | ≈140 million/s | All                                        | none             | none        |
+//! | `x86::Ssse3` | ≈2.7 billion/s | x86 with SSSE3 (Woodcrest and above, 2006) | `ssse3`          | `x86_ssse3` |
 //!
 //! If you have a modern x86 and you want to use the all SIMD accelerated
 //! versions, you would use `target_feature` in a compiler invocation like this:
@@ -117,7 +114,7 @@
 //! The `Scalar` codec does not use unsafe.
 
 #![cfg_attr(
-    any(feature = "x86_ssse3", feature = "x86_sse41"),
+    any(feature = "x86_ssse3", feature = "x86_sse41", feature = "aarch64_neon"),
     feature(portable_simd)
 )]
 
@@ -126,6 +123,7 @@ mod tables;
 pub mod decode;
 pub mod encode;
 
+pub mod aarch64;
 pub mod scalar;
 pub mod x86;
 

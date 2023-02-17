@@ -57,7 +57,7 @@ pub trait Decoder {
 }
 
 /// For decoders that wish to support slice-based features like the top-level
-/// `decode()` or DecodeCursor's `decode_slice()`.
+/// `decode()` or `DecodeCursor`'s `decode_slice()`.
 pub trait WriteQuadToSlice: Decoder {
     /// Write a quad into a size-4 slice.
     fn write_quad_to_slice(quad: Self::DecodedQuad, slice: &mut [u32]);
@@ -127,7 +127,7 @@ pub fn decode<D: Decoder + WriteQuadToSlice>(
     count: usize,
     output: &mut [u32],
 ) -> usize {
-    let mut cursor = cursor::DecodeCursor::new(&input, count);
+    let mut cursor = cursor::DecodeCursor::new(input, count);
 
     assert_eq!(
         count,

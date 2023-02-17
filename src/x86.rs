@@ -1,4 +1,4 @@
-//! x86-specific accelerated code.
+//! `x86_64`-specific accelerated code.
 
 #[cfg(feature = "x86_ssse3")]
 pub use crate::decode::ssse3::Ssse3;

@@ -1,5 +1,7 @@
 use rand::Rng;
 
+#[cfg(feature = "aarch64_neon")]
+use crate::aarch64;
 #[cfg(feature = "x86_ssse3")]
 use crate::x86;
 use crate::{
@@ -18,7 +20,7 @@ fn decode_num_zero() {
 #[test]
 fn decode_num_u32_max() {
     assert_eq!(
-        u32::max_value(),
+        u32::MAX,
         decode_num_scalar(4, &vec![0xFF, 0xFF, 0xFF, 0xFF])
     );
 }

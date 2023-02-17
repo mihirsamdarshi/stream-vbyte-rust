@@ -133,7 +133,7 @@ impl<'a> DecodeCursor<'a> {
 
         let slice_to_skip = &self.control_bytes
             [self.control_bytes_read..(self.control_bytes_read + control_bytes_to_skip)];
-        let skipped_encoded_len = cumulative_encoded_len(&slice_to_skip);
+        let skipped_encoded_len = cumulative_encoded_len(slice_to_skip);
 
         self.control_bytes_read += control_bytes_to_skip;
         self.encoded_bytes_read += skipped_encoded_len;

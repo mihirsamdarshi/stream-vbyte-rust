@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  test:
+  test-simd:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -60,5 +60,36 @@ jobs:
       - name: Run benchmarks
         run: cross bench --features=${{ env.CARGO_FEATURES }} --target=${{ env.TARGET }}
 
+  test-scalar:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Build test suite
+        run: cargo test --no-run --all-features
+
+      - name: Run tests
+        run: RUST_BACKTRACE=1 cross test --all-features
+
+      # make sure benchmarks compile
+      - name: Build benchmarks
+        run: cross bench --no-run --all-features
+
+      - name: Run benchmarks
+        run: cross bench --all-features
 
 

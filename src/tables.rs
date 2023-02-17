@@ -519,6 +519,10 @@ pub const DECODE_LENGTH_PER_QUAD_TABLE: &[u8; 256] = &[
 ];
 
 #[rustfmt::skip]
+#[cfg(all(
+    any(feature = "x86_ssse3", feature = "aarch64_neon"),
+    not(all(feature = "x86_ssse3", feature = "aarch64_neon"))
+))]
 pub const DECODE_SHUFFLE_TABLE: &[[u8; 16]; 256] = &[
     // 0 = 0x0 = 0b00000000, lengths 1 1 1 1
     [   0, 128, 128, 128,   1, 128, 128, 128,   2, 128, 128, 128,   3, 128, 128, 128],

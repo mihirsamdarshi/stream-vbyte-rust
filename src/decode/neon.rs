@@ -7,9 +7,9 @@ use super::{DecodeQuadSink, Decoder, WriteQuadToSlice};
 use crate::tables;
 
 /// Decoder using SSSE3 instructions.
-pub struct Neon;
+pub struct NeonDecoder;
 
-impl Decoder for Neon {
+impl Decoder for NeonDecoder {
     type DecodedQuad = uint8x16_t;
 
     fn decode_quads<S: DecodeQuadSink<Self>>(

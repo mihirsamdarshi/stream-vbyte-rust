@@ -1,3 +1,5 @@
+use crate::scalar;
+
 pub mod cursor;
 
 #[cfg(feature = "x86_ssse3")]
@@ -8,6 +10,18 @@ pub mod neon;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(any(
+    not(any(feature = "x86_ssse3", feature = "aarch64_neon")),
+    all(feature = "x86_ssse3", feature = "aarch64_neon")
+))]
+pub type StreamVbyteDecoder = scalar::Scalar;
+
+#[cfg(all(feature = "x86_ssse3", not(feature = "aarch64_neon")))]
+pub type StreamVbyteDecoder = ssse3::Ssse3;
+
+#[cfg(all(feature = "aarch64_neon", not(feature = "x86_ssse3")))]
+pub type StreamVbyteDecoder = neon::NeonDecoder;
 
 /// Decode bytes to numbers.
 pub trait Decoder {

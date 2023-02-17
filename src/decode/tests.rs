@@ -4,7 +4,7 @@ use rand::Rng;
 use crate::x86;
 use crate::{
     cumulative_encoded_len,
-    decode::{decode_num_scalar, Decoder, SliceDecodeSink, WriteQuadToSlice},
+    decode::{decode_num_scalar, Decoder, SliceDecodeSink, StreamVbyteDecoder, WriteQuadToSlice},
     encode::encode,
     random_varint::RandomVarintEncodedLengthIter,
     scalar::Scalar,
@@ -60,12 +60,27 @@ fn decoder_honors_nums_to_decode_scalar() {
     decoder_honors_nums_to_decode::<Scalar>(0);
 }
 
+#[cfg(feature = "aarch64_neon")]
+#[test]
+fn decoder_honors_nums_to_decode_neon() {
+    // Sse3 reads 16 bytes at a time, so it cannot handle the last 3 control bytes
+    // in case their encoded nums are <16 bytes
+    decoder_honors_nums_to_decode::<aarch64::NeonDecoder>(3);
+}
+
 #[cfg(feature = "x86_ssse3")]
 #[test]
 fn decoder_honors_nums_to_decode_ssse3() {
     // Sse3 reads 16 bytes at a time, so it cannot handle the last 3 control bytes
     // in case their encoded nums are <16 bytes
     decoder_honors_nums_to_decode::<x86::Ssse3>(3);
+}
+
+#[test]
+fn decoder_honors_nums_to_decode_general() {
+    // Sse3 reads 16 bytes at a time, so it cannot handle the last 3 control bytes
+    // in case their encoded nums are <16 bytes
+    decoder_honors_nums_to_decode::<StreamVbyteDecoder>(3);
 }
 
 fn decoder_honors_nums_to_decode<D: Decoder + WriteQuadToSlice>(

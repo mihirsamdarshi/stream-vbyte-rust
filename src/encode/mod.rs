@@ -1,5 +1,8 @@
 use crate::{encoded_shape, scalar};
 
+#[cfg(feature = "aarch64_neon")]
+pub mod neon;
+
 #[cfg(feature = "x86_sse41")]
 pub mod sse41;
 
@@ -11,6 +14,9 @@ pub type StreamVbyteEncoder = scalar::Scalar;
 
 #[cfg(all(feature = "x86_sse41", not(feature = "aarch64_neon")))]
 pub type StreamVbyteEncoder = sse41::Sse41;
+
+#[cfg(all(feature = "aarch64_neon", not(feature = "x86_sse41")))]
+pub type StreamVbyteEncoder = neon::NeonEncoder;
 
 /// Encode numbers to bytes.
 pub trait Encoder {
@@ -43,7 +49,7 @@ pub trait Encoder {
 ///
 /// Returns the number of bytes written to the `output` slice.
 pub fn encode<E: Encoder>(input: &[u32], output: &mut [u8]) -> usize {
-    if input.len() == 0 {
+    if input.is_empty() {
         return 0;
     }
 
@@ -52,7 +58,7 @@ pub fn encode<E: Encoder>(input: &[u32], output: &mut [u8]) -> usize {
     let (control_bytes, encoded_bytes) = output.split_at_mut(shape.control_bytes_len);
 
     let (nums_encoded, mut num_bytes_written) = E::encode_quads(
-        &input[..],
+        input,
         &mut control_bytes[0..shape.complete_control_bytes_len],
         &mut encoded_bytes[..],
     );
@@ -98,10 +104,7 @@ pub fn encode_num_scalar(num: u32, output: &mut [u8]) -> usize {
     // this will calculate 0_u32 as taking 0 bytes, so ensure at least 1 byte
     let len = std::cmp::max(1_usize, 4 - num.leading_zeros() as usize / 8);
     let buf = num.to_le_bytes();
-
-    for i in 0..len {
-        output[i] = buf[i];
-    }
+    output[..len].copy_from_slice(&buf[..len]);
 
     len
 }

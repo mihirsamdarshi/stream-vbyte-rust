@@ -3,6 +3,9 @@ pub mod cursor;
 #[cfg(feature = "x86_ssse3")]
 pub mod ssse3;
 
+#[cfg(feature = "aarch64_neon")]
+pub mod neon;
+
 #[cfg(test)]
 mod tests;
 

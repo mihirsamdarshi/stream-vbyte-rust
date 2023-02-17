@@ -1,5 +1,5 @@
-#[cfg_attr(rustfmt, rustfmt_skip)]
-pub const DECODE_LENGTH_PER_NUM_TABLE: &'static [(u8, u8, u8, u8); 256] = &[
+#[rustfmt::skip]
+pub const DECODE_LENGTH_PER_NUM_TABLE: &[(u8, u8, u8, u8); 256] = &[
     (1, 1, 1, 1), // 0 = 0x0 = 0b00000000, lengths 1 1 1 1
     (2, 1, 1, 1), // 1 = 0x1 = 0b00000001, lengths 2 1 1 1
     (3, 1, 1, 1), // 2 = 0x2 = 0b00000010, lengths 3 1 1 1
@@ -258,8 +258,8 @@ pub const DECODE_LENGTH_PER_NUM_TABLE: &'static [(u8, u8, u8, u8); 256] = &[
     (4, 4, 4, 4), // 255 = 0xFF = 0b11111111, lengths 4 4 4 4
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
-pub const DECODE_LENGTH_PER_QUAD_TABLE: &'static [u8; 256] = &[
+#[rustfmt::skip]
+pub const DECODE_LENGTH_PER_QUAD_TABLE: &[u8; 256] = &[
     4, // 0 = 0x0 = 0b00000000, lengths 1 1 1 1
     5, // 1 = 0x1 = 0b00000001, lengths 2 1 1 1
     6, // 2 = 0x2 = 0b00000010, lengths 3 1 1 1
@@ -518,9 +518,8 @@ pub const DECODE_LENGTH_PER_QUAD_TABLE: &'static [u8; 256] = &[
     16, // 255 = 0xFF = 0b11111111, lengths 4 4 4 4
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
-#[cfg(feature = "x86_ssse3")]
-pub const X86_SSSE3_DECODE_SHUFFLE_TABLE: &'static [[u8; 16]; 256] = &[
+#[rustfmt::skip]
+pub const DECODE_SHUFFLE_TABLE: &[[u8; 16]; 256] = &[
     // 0 = 0x0 = 0b00000000, lengths 1 1 1 1
     [   0, 128, 128, 128,   1, 128, 128, 128,   2, 128, 128, 128,   3, 128, 128, 128],
     // 1 = 0x1 = 0b00000001, lengths 2 1 1 1
@@ -1035,9 +1034,9 @@ pub const X86_SSSE3_DECODE_SHUFFLE_TABLE: &'static [[u8; 16]; 256] = &[
     [   0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15],
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[cfg(feature = "x86_sse41")]
-pub const X86_ENCODE_SHUFFLE_TABLE: &'static [[u8; 16]; 256] = &[
+pub const X86_ENCODE_SHUFFLE_TABLE: &[[u8; 16]; 256] = &[
     // 0 = 0x0 = 0b00000000, lengths 1 1 1 1
     [   0,   4,   8,  12, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128],
     // 1 = 0x1 = 0b00000001, lengths 2 1 1 1

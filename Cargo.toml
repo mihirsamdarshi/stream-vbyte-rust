@@ -25,7 +25,5 @@ default = []
 # Expose SIMD features
 x86_ssse3 = []
 x86_sse41 = []
+aarch64_neon = []
 
-[package.metadata.docs.rs]
-all-features = true
-rustc-args = ["-C", "target-feature=+ssse3,+sse4.1"]

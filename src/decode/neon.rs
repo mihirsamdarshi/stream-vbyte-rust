@@ -1,16 +1,16 @@
-use std::{
-    arch::x86_64::{__m128i, _mm_loadu_si128, _mm_shuffle_epi8, _mm_storeu_si128},
-    cmp,
-};
+use std::cmp;
 
-use super::{DecodeQuadSink, Decoder, WriteQuadToSlice};
+use std::arch::aarch64::{uint8x16_t, vld1q_u8, vqtbl1q_u8, vst1q_u8};
+
 use crate::tables;
 
-/// Decoder using SSSE3 instructions.
-pub struct Ssse3;
+use super::{DecodeQuadSink, Decoder, WriteQuadToSlice};
 
-impl Decoder for Ssse3 {
-    type DecodedQuad = __m128i;
+/// Decoder using SSSE3 instructions.
+pub struct Neon;
+
+impl Decoder for Neon {
+    type DecodedQuad = uint8x16_t;
 
     fn decode_quads<S: DecodeQuadSink<Self>>(
         control_bytes: &[u8],
@@ -22,36 +22,36 @@ impl Decoder for Ssse3 {
         let mut bytes_read: usize = 0;
         let mut nums_decoded: usize = nums_already_decoded;
 
-        // Decoding reads 16 bytes at a time from input, so we won't be able to read the
-        // last few control byte's worth because they may be encoded at 1 byte
-        // per number, so we need 3 additional control bytes' worth of numbers
-        // to provide the extra 12 bytes. However, if control_bytes_to_decode is
-        // short enough, we can decode all the requested numbers because we'll
-        // have un-processed input to ensure we can read 16 bytes.
+        // Decoding reads 16 bytes at a time from input, so we won't be able to read the last few
+        // control byte's worth because they may be encoded at 1 byte per number, so we need 3
+        // additional control bytes' worth of numbers to provide the extra 12 bytes.
+        // However, if control_bytes_to_decode is short enough, we can decode all the requested
+        // numbers because we'll have un-processed input to ensure we can read 16 bytes.
         let control_byte_limit = cmp::min(
             control_bytes_to_decode,
             control_bytes.len().saturating_sub(3),
         );
 
-        // need to ensure that we can copy 16 encoded bytes, so last few quads will be
-        // handled by a slower loop
+        // need to ensure that we can copy 16 encoded bytes, so last few quads will be handled
+        // by a slower loop
         for &control_byte in control_bytes[0..control_byte_limit].iter() {
             let length = tables::DECODE_LENGTH_PER_QUAD_TABLE[control_byte as usize];
             let mask_bytes = tables::DECODE_SHUFFLE_TABLE[control_byte as usize];
-            // we'll read 16 bytes from this always, so using explicit slice size to make
-            // sure it's ok to read unsafe
+            // we'll read 16 bytes from this always, so using explicit slice size to make sure it's
+            // ok to read unsafe
             let next_4 = &encoded_nums[bytes_read..(bytes_read + 16)];
 
             let mask;
             let data;
+
             unsafe {
                 // TODO load mask unaligned once https://github.com/rust-lang/rust/issues/33626
                 // hits stable
-                mask = _mm_loadu_si128(mask_bytes.as_ptr() as *const __m128i);
-                data = _mm_loadu_si128(next_4.as_ptr() as *const __m128i);
+                mask = vld1q_u8(mask_bytes.as_ptr() as *const u8);
+                data = vld1q_u8(next_4.as_ptr() as *const u8);
             }
 
-            let decompressed = unsafe { _mm_shuffle_epi8(data, mask) };
+            let decompressed = unsafe { vqtbl1q_u8(data, mask) };
 
             sink.on_quad(decompressed, nums_decoded);
 
@@ -63,16 +63,17 @@ impl Decoder for Ssse3 {
     }
 }
 
-impl WriteQuadToSlice for Ssse3 {
+impl WriteQuadToSlice for Neon {
     fn write_quad_to_slice(quad: Self::DecodedQuad, slice: &mut [u32]) {
-        unsafe { _mm_storeu_si128(slice.as_ptr() as *mut __m128i, quad) }
+        unsafe { vst1q_u8(slice.as_ptr() as *mut u8, quad) }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::{cumulative_encoded_len, decode::SliceDecodeSink, encode::encode, scalar::Scalar};
+
+    use super::*;
 
     #[test]
     fn reads_all_requested_control_bytes_when_12_extra_input_bytes() {
@@ -92,9 +93,9 @@ mod tests {
             decoded.resize(nums.len(), 54321);
 
             // requesting 13 or fewer control bytes decodes all requested bytes
-            let (nums_decoded, bytes_read) = Ssse3::decode_quads(
-                &control_bytes,
-                &encoded_nums,
+            let (nums_decoded, bytes_read) = Neon::decode_quads(
+                control_bytes,
+                encoded_nums,
                 control_bytes_to_decode,
                 0,
                 &mut SliceDecodeSink::new(&mut decoded),
@@ -112,11 +113,11 @@ mod tests {
             decoded.clear();
             decoded.resize(nums.len(), 54321);
 
-            // requesting more than 13 gets capped to 13 because there may not be enough
-            // encoded nums to read 16 bytes at a time
-            let (nums_decoded, bytes_read) = Ssse3::decode_quads(
-                &control_bytes,
-                &encoded_nums,
+            // requesting more than 13 gets capped to 13 because there may not be enough encoded
+            // nums to read 16 bytes at a time
+            let (nums_decoded, bytes_read) = Neon::decode_quads(
+                control_bytes,
+                encoded_nums,
                 control_bytes_to_decode,
                 0,
                 &mut SliceDecodeSink::new(&mut decoded),

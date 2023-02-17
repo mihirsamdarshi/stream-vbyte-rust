@@ -19,16 +19,13 @@ jobs:
       matrix:
         arch: [ aarch64, x86_64 ]
 
-    env:
-      RUSTFLAGS: ${{ '-C target-feature=+ssse3,+sse4.1' if matrix.arch == 'x86_64' else '-C target-feature=+ssse3,+sse4.1' }}
-
     steps:
       - uses: actions/checkout@v3
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
+          toolchain: nightly
           targets: ${{ matrix.arch }}-unknown-linux-gnu
 
       - name: Cache Cargo dependencies
@@ -36,27 +33,32 @@ jobs:
         with:
           cache-on-failure: true
 
-      - name: Set features by arch
+      - name: Install cross
+        run: cargo install cross
+
+      - name: Set crate features by arch
         run: |
           if [ "${{ matrix.arch }}" = "aarch64" ]; then
             echo "CARGO_FEATURES=aarch64_neon" >> $GITHUB_ENV
+            echo "TARGET=aarch64-unknown-linux-gnu" >> $GITHUB_ENV
           fi
           if [ "${{ matrix.arch }}" = "x86_64" ]; then
-            echo "CARGO_FEATURES=x86_sse3,x86_sse41" >> $GITHUB_ENV
+            echo "CARGO_FEATURES=x86_ssse3,x86_sse41" >> $GITHUB_ENV
+            echo "TARGET=x86_64-unknown-linux-gnu" >> $GITHUB_ENV
           fi
 
       - name: Build test suite
-        run: cargo test --no-run --features=${{ env.CARGO_FEATURES }}
+        run: cross test --no-run --features=${{ env.CARGO_FEATURES }} --target=${{ env.TARGET }}
 
       - name: Run tests
-        run: RUST_BACKTRACE=1 cargo test --features=${{ env.CARGO_FEATURES }}
+        run: RUST_BACKTRACE=1 cross test --features=${{ env.CARGO_FEATURES }} --target=${{ env.TARGET }}
 
       # make sure benchmarks compile
       - name: Build benchmarks
-        run: cargo bench --no-run --features=${{ env.CARGO_FEATURES }}
+        run: cross bench --no-run --features=${{ env.CARGO_FEATURES }} --target=${{ env.TARGET }}
 
       - name: Run benchmarks
-        run: cargo bench --features=${{ env.CARGO_FEATURES }}
+        run: cross bench --features=${{ env.CARGO_FEATURES }} --target=${{ env.TARGET }}
 
 
 

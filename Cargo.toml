@@ -10,6 +10,7 @@ keywords = ["varint", "stream-vbyte"]
 categories = ["encoding", "compression"]
 license-file = "LICENSE.txt"
 edition = "2018"
+rust-version = "1.59"
 
 [dev-dependencies]
 rand = "0.3.16"

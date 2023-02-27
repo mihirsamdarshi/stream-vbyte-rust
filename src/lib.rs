@@ -126,8 +126,13 @@ mod tables;
 pub mod decode;
 pub mod encode;
 
+#[cfg(all(feature = "aarch64_neon", target_arch = "aarch64"))]
 pub mod aarch64;
 pub mod scalar;
+#[cfg(all(
+    any(feature = "x86_ssse3", feature = "x86_sse41"),
+    target_arch = "x86_64"
+))]
 pub mod x86;
 
 #[derive(Debug, PartialEq)]

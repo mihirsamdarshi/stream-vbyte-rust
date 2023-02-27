@@ -9,21 +9,9 @@ use crate::tables::NEON_ENCODE_SHUFFLE_TABLE;
 /// Encoder using SSE4.1 instructions.
 pub struct NeonEncoder;
 
-const ONES: [u8; 16] = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
 // multiplicand to achieve shifts by multiplication
 const SHIFT: i32 = 3;
 const SHIFTS: [i32; 4] = [SHIFT, SHIFT, SHIFT, SHIFT];
-// translate 3-bit bytemaps into lane codes. Last 8 will never be used.
-// 0 = 1 byte encoded num, 1 = 2 byte, etc.
-// These are concatenated into the control byte, and also used to sum to find
-// the total length. The ordering of these codes is determined by how the
-// bytemap is calculated; see comments below.
-#[rustfmt::skip]
-const LANECODES: [u8; 16] = [
-    0, 3, 2, 3,
-    1, 3, 2, 3,
-    128, 128, 128, 128,
-    128, 128, 128, 128];
 // gather high bytes from each lane, 2 copies
 const GATHER_LO: [u8; 8] = [12, 8, 4, 0, 12, 8, 4, 0];
 // mul-shift magic
@@ -35,7 +23,7 @@ const AGGREGATORS: [u32; 2] = [CONCAT, SUM];
 
 impl Encoder for NeonEncoder {
     fn encode_quads(input: &[u32], control_bytes: &mut [u8], output: &mut [u8]) -> (usize, usize) {
-        let mut nums_encoded: usize = 0;
+        let nums_encoded: usize = 0;
 
         let mut code_and_length: [u32; 2] = [0, 0];
 
@@ -75,7 +63,7 @@ impl Encoder for NeonEncoder {
         // Encoding writes 16 bytes at a time, but if numbers are encoded with 1 byte
         // each, that means the last 3 quads could write past what is actually
         // necessary. So, don't process the last few control bytes.
-        let control_byte_limit = control_bytes.len().saturating_sub(3);
+        let _control_byte_limit = control_bytes.len().saturating_sub(3);
 
         (nums_encoded, length as usize)
     }

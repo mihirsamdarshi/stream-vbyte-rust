@@ -1,8 +1,8 @@
 use rand::Rng;
 
-#[cfg(feature = "aarch64_neon")]
+#[cfg(all(feature = "aarch64_neon", target_arch = "aarch64"))]
 use crate::aarch64;
-#[cfg(feature = "x86_ssse3")]
+#[cfg(all(feature = "x86_ssse3", target_arch = "x86_64"))]
 use crate::x86;
 use crate::{
     cumulative_encoded_len,
@@ -62,7 +62,7 @@ fn decoder_honors_nums_to_decode_scalar() {
     decoder_honors_nums_to_decode::<Scalar>(0);
 }
 
-#[cfg(feature = "aarch64_neon")]
+#[cfg(all(feature = "aarch64_neon", target_arch = "aarch64"))]
 #[test]
 fn decoder_honors_nums_to_decode_neon() {
     // Sse3 reads 16 bytes at a time, so it cannot handle the last 3 control bytes
@@ -70,7 +70,7 @@ fn decoder_honors_nums_to_decode_neon() {
     decoder_honors_nums_to_decode::<aarch64::NeonDecoder>(3);
 }
 
-#[cfg(feature = "x86_ssse3")]
+#[cfg(all(feature = "x86_ssse3", target_arch = "x86_64"))]
 #[test]
 fn decoder_honors_nums_to_decode_ssse3() {
     // Sse3 reads 16 bytes at a time, so it cannot handle the last 3 control bytes

@@ -1,21 +1,18 @@
 use crate::{encoded_shape, scalar};
 
-#[cfg(feature = "aarch64_neon")]
-pub mod neon;
-
-#[cfg(feature = "x86_sse41")]
+#[cfg(all(feature = "x86_sse41", target_arch = "x86_64"))]
 pub mod sse41;
 
-#[cfg(any(
-    not(any(feature = "x86_sse41", feature = "aarch64_neon")),
-    all(feature = "x86_sse41", feature = "aarch64_neon")
-))]
+#[cfg(all(feature = "aarch64_neon", target_arch = "aarch64",))]
+pub mod neon;
+
+#[cfg(not(any(feature = "x86_sse41", feature = "aarch64_neon")))]
 pub type StreamVbyteEncoder = scalar::Scalar;
 
-#[cfg(all(feature = "x86_sse41", not(feature = "aarch64_neon")))]
+#[cfg(all(feature = "x86_sse41", target_arch = "x86_64"))]
 pub type StreamVbyteEncoder = sse41::Sse41;
 
-#[cfg(all(feature = "aarch64_neon", not(feature = "x86_sse41")))]
+#[cfg(all(feature = "aarch64_neon", target_arch = "aarch64",))]
 pub type StreamVbyteEncoder = neon::NeonEncoder;
 
 /// Encode numbers to bytes.

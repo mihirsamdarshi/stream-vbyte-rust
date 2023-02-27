@@ -519,10 +519,7 @@ pub const DECODE_LENGTH_PER_QUAD_TABLE: &[u8; 256] = &[
 ];
 
 #[rustfmt::skip]
-#[cfg(all(
-    any(feature = "x86_ssse3", feature = "aarch64_neon"),
-    not(all(feature = "x86_ssse3", feature = "aarch64_neon"))
-))]
+#[cfg(any(feature = "x86_ssse3", feature = "aarch64_neon"))]
 pub const DECODE_SHUFFLE_TABLE: &[[u8; 16]; 256] = &[
     // 0 = 0x0 = 0b00000000, lengths 1 1 1 1
     [   0, 128, 128, 128,   1, 128, 128, 128,   2, 128, 128, 128,   3, 128, 128, 128],
@@ -1039,7 +1036,7 @@ pub const DECODE_SHUFFLE_TABLE: &[[u8; 16]; 256] = &[
 ];
 
 #[rustfmt::skip]
-#[cfg(feature = "x86_sse41")]
+#[cfg(all(feature = "x86_sse41", target_arch = "x86_64"))]
 pub const X86_ENCODE_SHUFFLE_TABLE: &[[u8; 16]; 256] = &[
     // 0 = 0x0 = 0b00000000, lengths 1 1 1 1
     [   0,   4,   8,  12, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128],
@@ -1556,7 +1553,7 @@ pub const X86_ENCODE_SHUFFLE_TABLE: &[[u8; 16]; 256] = &[
 ];
 
 #[rustfmt::skip]
-#[cfg(feature = "aarch64_neon")]
+#[cfg(all(feature = "aarch64_neon", target_arch = "aarch64"))]
 pub const NEON_ENCODE_SHUFFLE_TABLE: &[[u8; 16]; 256] = &[
     [  0,  4,  8, 12, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128 ],    // 1111
     [  0,  1,  4,  8,  12, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128 ],    // 2111

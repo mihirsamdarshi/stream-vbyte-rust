@@ -83,13 +83,13 @@ jobs:
         run: cargo test --no-run --all-features
 
       - name: Run tests
-        run: RUST_BACKTRACE=1 cross test --all-features
+        run: RUST_BACKTRACE=1 cargo test --all-features
 
       # make sure benchmarks compile
       - name: Build benchmarks
-        run: cross bench --no-run --all-features
+        run: cargo bench --no-run --all-features
 
       - name: Run benchmarks
-        run: cross bench --all-features
+        run: cargo bench --all-features
 
 

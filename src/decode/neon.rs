@@ -3,7 +3,7 @@ use std::arch::aarch64::{uint8x16_t, vld1q_u8, vqtbl1q_u8, vst1q_u8};
 use super::{DecodeQuadSink, Decoder, WriteQuadToSlice};
 use crate::tables;
 
-/// Decoder using SSSE3 instructions.
+/// Decoder using NEON instructions.
 pub struct NeonDecoder;
 
 impl Decoder for NeonDecoder {
@@ -59,7 +59,7 @@ impl Decoder for NeonDecoder {
     }
 }
 
-impl WriteQuadToSlice for Neon {
+impl WriteQuadToSlice for NeonDecoder {
     fn write_quad_to_slice(quad: Self::DecodedQuad, slice: &mut [u32]) {
         unsafe { vst1q_u8(slice.as_ptr() as *mut u8, quad) }
     }
@@ -88,7 +88,7 @@ mod tests {
             decoded.resize(nums.len(), 54321);
 
             // requesting 13 or fewer control bytes decodes all requested bytes
-            let (nums_decoded, bytes_read) = Neon::decode_quads(
+            let (nums_decoded, bytes_read) = NeonDecoder::decode_quads(
                 control_bytes,
                 encoded_nums,
                 control_bytes_to_decode,
@@ -110,7 +110,7 @@ mod tests {
 
             // requesting more than 13 gets capped to 13 because there may not be enough
             // encoded nums to read 16 bytes at a time
-            let (nums_decoded, bytes_read) = Neon::decode_quads(
+            let (nums_decoded, bytes_read) = NeonDecoder::decode_quads(
                 control_bytes,
                 encoded_nums,
                 control_bytes_to_decode,

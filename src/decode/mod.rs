@@ -1,5 +1,3 @@
-use crate::scalar;
-
 pub mod cursor;
 
 #[cfg(feature = "x86_ssse3")]

@@ -1,13 +1,10 @@
-use std::{
-    arch::aarch64::{
-        vclzq_u32, vdupq_n_u32, vld1_u32, vld1_u8, vld1q_u32, vmul_u32, vqsubq_u32, vqtbl1_u8,
-        vreinterpret_u32_u8, vreinterpretq_u8_u32, vshrq_n_u32, vst1_u32,
-    },
-    simd,
+use std::arch::aarch64::{
+    vclzq_u32, vld1_u32, vld1_u8, vld1q_u32, vld1q_u8, vmul_u32, vqsubq_u32, vqtbl1_u8, vqtbl1q_u8,
+    vreinterpret_u32_u8, vreinterpretq_u8_u32, vshrq_n_u32, vst1_u32, vst1q_u8,
 };
 
 use super::Encoder;
-use crate::{tables, tables::NEON_ENCODE_SHUFFLE_TABLE};
+use crate::tables::NEON_ENCODE_SHUFFLE_TABLE;
 
 /// Encoder using SSE4.1 instructions.
 pub struct NeonEncoder;
@@ -40,12 +37,14 @@ impl Encoder for NeonEncoder {
     fn encode_quads(input: &[u32], control_bytes: &mut [u8], output: &mut [u8]) -> (usize, usize) {
         let mut nums_encoded: usize = 0;
 
-        let code_and_length: [u32; 2] = [0, 0];
+        let mut code_and_length: [u32; 2] = [0, 0];
 
         unsafe {
+            let inq = vld1q_u32(input.as_ptr() as *const u32);
+
             let shifts = vld1q_u32(SHIFTS.as_ptr() as *const u32);
 
-            let clzbytes = vshrq_n_u32::<SHIFT>(lo_bytes);
+            let clzbytes = vshrq_n_u32(vclzq_u32(inq), 3);
             let lanecodes = vqsubq_u32(shifts, clzbytes);
 
             let lanebytes = vreinterpretq_u8_u32(lanecodes);
@@ -55,7 +54,7 @@ impl Encoder for NeonEncoder {
             let mulshift = vreinterpret_u32_u8(lobytes);
 
             vst1_u32(
-                code_and_length.as_ptr() as *const u32,
+                code_and_length.as_mut_ptr() as *mut u32,
                 vmul_u32(mulshift, aggregators),
             );
         };
@@ -63,11 +62,12 @@ impl Encoder for NeonEncoder {
         let (code, length) = (code_and_length[0] >> 24, 4 + (code_and_length[1] >> 24));
 
         unsafe {
-            let encoding_shuffle = vld1q_u8(NEON_ENCODE_SHUFFLE_TABLE[code].as_ptr() as *const u8);
+            let encoding_shuffle =
+                vld1q_u8(NEON_ENCODE_SHUFFLE_TABLE[code as usize].as_ptr() as *const u8);
             let inu = vreinterpretq_u8_u32(vld1q_u32(input.as_ptr() as *const u32));
 
             vst1q_u8(
-                output.as_ptr() as *const u8,
+                output.as_mut_ptr() as *mut u8,
                 vqtbl1q_u8(inu, encoding_shuffle),
             );
         }
